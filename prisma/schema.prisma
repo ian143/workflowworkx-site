@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// USERS & AUTHENTICATION
+// Replaces: USER_ACCESS sheet (auth columns)
+// ============================================================
+
+enum SubscriptionStatus {
+  pending_audit
+  active
+  paused
+  cancelled
+}
+
+model User {
+  id                    String             @id @default(cuid())
+  email                 String             @unique
+  passwordHash          String             @map("password_hash")
+  name                  String?
+  subscriptionStatus    SubscriptionStatus @default(pending_audit) @map("subscription_status")
+  stripeCustomerId      String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId  String?            @unique @map("stripe_subscription_id")
+  linkedinAccessToken   String?            @map("linkedin_access_token")
+  linkedinRefreshToken  String?            @map("linkedin_refresh_token")
+  linkedinTokenExpiry   DateTime?          @map("linkedin_token_expiry")
+  linkedinUserId        String?            @map("linkedin_user_id")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  vault            IdentityVault?
+  projects         Project[]
+  pipelineItems    PipelineItem[]
+  strategicTargets StrategicTarget[]
+
+  @@map("users")
+}
+
+// ============================================================
+// IDENTITY VAULT (Brand Vault v4.1)
+// Replaces: IDENTITY_FILE_JSON column in USER_ACCESS
+// ============================================================
+
+enum AuditStatus {
+  pending
+  passed
+  passed_with_warnings
+  failed
+}
+
+model IdentityVault {
+  id           String      @id @default(cuid())
+  userId       String      @unique @map("user_id")
+  vaultData    Json        @map("vault_data") @db.JsonB
+  auditStatus  AuditStatus @default(pending) @map("audit_status")
+  auditResults String?     @map("audit_results") @db.Text
+  version      Int         @default(1)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("identity_vaults")
+}
+
+// ============================================================
+// PROJECTS & FILES
+// Replaces: Subfolder scanning + PROJECT_ASSETS sheet
+// ============================================================
+
+enum ProjectStatus {
+  uploading
+  processing
+  ready
+  archived
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  userId          String        @map("user_id")
+  name            String
+  status          ProjectStatus @default(uploading)
+  sourceFolderUrl String?       @map("source_folder_url")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files         ProjectFile[]
+  pipelineItems PipelineItem[]
+
+  @@map("projects")
+}
+
+enum FileType {
+  pdf
+  pptx
+  docx
+  txt
+  image
+}
+
+model ProjectFile {
+  id            String   @id @default(cuid())
+  projectId     String   @map("project_id")
+  fileName      String   @map("file_name")
+  fileType      FileType @map("file_type")
+  mimeType      String   @map("mime_type")
+  storageKey    String   @map("storage_key")
+  extractedText String?  @map("extracted_text") @db.Text
+  fileSizeBytes Int      @map("file_size_bytes")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  carouselSlides CarouselSlide[]
+
+  @@map("project_files")
+}
+
+// ============================================================
+// CONTENT PIPELINE (The Steel Loop)
+// Replaces: CONTENT_PIPELINE sheet
+// ============================================================
+
+enum PipelineStatus {
+  new
+  scouting
+  sparks_generated
+  drafting
+  ready
+  published
+  error
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+model PipelineItem {
+  id            String         @id @default(cuid())
+  userId        String         @map("user_id")
+  projectId     String         @map("project_id")
+  status        PipelineStatus @default(new)
+  forensicBrief String?        @map("forensic_brief") @db.Text
+  priority      Priority       @default(medium)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sparks  Spark[]
+
+  @@map("pipeline_items")
+}
+
+// ============================================================
+// SPARKS (Strategic Hooks)
+// Replaces: POST_VARIATIONS sheet (Spark rows)
+// ============================================================
+
+enum SparkStatus {
+  pending
+  approved
+  rejected
+  drafted
+}
+
+model Spark {
+  id             String      @id @default(cuid())
+  pipelineItemId String      @map("pipeline_item_id")
+  sparkText      String      @map("spark_text")
+  status         SparkStatus @default(pending)
+  sortOrder      Int         @map("sort_order")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  pipelineItem PipelineItem @relation(fields: [pipelineItemId], references: [id], onDelete: Cascade)
+  postDrafts   PostDraft[]
+
+  @@map("sparks")
+}
+
+// ============================================================
+// POST DRAFTS (Ghostwriter Output)
+// Replaces: POST_VARIATIONS sheet (Draft columns)
+// ============================================================
+
+enum LengthType {
+  short
+  medium
+  long
+}
+
+enum DraftStatus {
+  draft
+  approved
+  published
+  rejected
+}
+
+model PostDraft {
+  id             String      @id @default(cuid())
+  sparkId        String      @map("spark_id")
+  lengthType     LengthType  @map("length_type")
+  content        String      @db.Text
+  score          Int?
+  status         DraftStatus @default(draft)
+  publishedAt    DateTime?   @map("published_at")
+  linkedinPostId String?     @map("linkedin_post_id")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  spark          Spark           @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+  carouselSlides CarouselSlide[]
+
+  @@map("post_drafts")
+}
+
+// ============================================================
+// CAROUSEL SLIDES
+// Replaces: Carousel JSON + Carousel Engine
+// ============================================================
+
+model CarouselSlide {
+  id          String  @id @default(cuid())
+  postDraftId String  @map("post_draft_id")
+  slideNumber Int     @map("slide_number")
+  headline    String
+  content     String  @db.Text
+  imageFileId String? @map("image_file_id")
+
+  postDraft PostDraft    @relation(fields: [postDraftId], references: [id], onDelete: Cascade)
+  imageFile ProjectFile? @relation(fields: [imageFileId], references: [id], onDelete: SetNull)
+
+  @@map("carousel_slides")
+}
+
+// ============================================================
+// STRATEGIC TARGETS (Lead Intelligence)
+// Replaces: STRATEGIC_TARGETS sheet
+// ============================================================
+
+enum EngagementStatus {
+  identified
+  engaged
+  converted
+}
+
+model StrategicTarget {
+  id               String           @id @default(cuid())
+  userId           String           @map("user_id")
+  targetName       String           @map("target_name")
+  company          String?
+  linkedinUrl      String?          @map("linkedin_url")
+  engagementStatus EngagementStatus @default(identified) @map("engagement_status")
+  notes            String?          @db.Text
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("strategic_targets")
+}

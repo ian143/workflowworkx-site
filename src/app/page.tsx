@@ -1,0 +1,117 @@
+import Link from "next/link";
+
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen bg-slate-950">
+      {/* Nav */}
+      <nav className="fixed top-0 w-full z-50 glass border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <span className="text-xl font-bold tracking-tight">
+            Glue<span className="text-brand-400">OS</span>
+          </span>
+          <div className="flex gap-4 items-center">
+            <Link
+              href="/login"
+              className="text-sm text-slate-300 hover:text-white transition-colors"
+            >
+              Log In
+            </Link>
+            <Link
+              href="/login?register=true"
+              className="text-sm bg-brand-600 hover:bg-brand-500 px-4 py-2 rounded-lg transition-colors"
+            >
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="pt-32 pb-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-5xl md:text-6xl font-serif font-bold leading-tight mb-6">
+            Move Beyond Social Silence.{" "}
+            <span className="text-brand-400">Architect Your Authority.</span>
+          </h1>
+          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10">
+            GlueOS transforms your project wins into high-authority LinkedIn
+            content. No templates. No generic advice. Just your real work,
+            strategically positioned.
+          </p>
+          <Link
+            href="/login?register=true"
+            className="inline-block bg-brand-600 hover:bg-brand-500 text-white px-8 py-4 rounded-xl text-lg font-medium transition-colors"
+          >
+            Start Building Authority
+          </Link>
+        </div>
+      </section>
+
+      {/* The Engine */}
+      <section className="py-20 px-6 border-t border-white/5">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-serif font-bold text-center mb-16">
+            The Steel Loop
+          </h2>
+          <div className="grid md:grid-cols-4 gap-6">
+            {[
+              {
+                phase: "01",
+                title: "Scout",
+                desc: "Upload your project files. Our forensic engine extracts Data Bombs and Secret Math.",
+              },
+              {
+                phase: "02",
+                title: "Architect",
+                desc: "Five strategic sparks generated from your real results. Max 10 words. Maximum impact.",
+              },
+              {
+                phase: "03",
+                title: "Ghostwriter",
+                desc: "Three draft variations per spark. Validated by the Polyester Test quality gate.",
+              },
+              {
+                phase: "04",
+                title: "Sweeper",
+                desc: "One tap to publish directly to LinkedIn. No webhooks. No middlemen.",
+              },
+            ].map((item) => (
+              <div key={item.phase} className="glass rounded-xl p-6">
+                <span className="text-brand-400 font-mono text-sm">
+                  {item.phase}
+                </span>
+                <h3 className="text-xl font-bold mt-2 mb-3">{item.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Philosophy */}
+      <section className="py-20 px-6 border-t border-white/5">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl font-serif font-bold mb-6">
+            The Thinking First Approach
+          </h2>
+          <p className="text-slate-400 leading-relaxed">
+            Most LinkedIn content fails because it starts with the post. GlueOS
+            starts with your actual expertise. We forensically analyze your
+            project wins, extract the mechanisms that made them work, and build
+            authority-grade content from real commercial logic. The result reads
+            like you wrote it — because it came from your work.
+          </p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-10 px-6 border-t border-white/5">
+        <div className="max-w-6xl mx-auto text-center text-slate-500 text-sm">
+          &copy; {new Date().getFullYear()} WorkflowWorkx. All rights reserved.
+        </div>
+      </footer>
+    </div>
+  );
+}
