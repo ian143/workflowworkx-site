@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { createStripeCustomer } from "@/lib/stripe";
+import { isFounder } from "@/lib/founders";
 
 export async function POST(req: NextRequest) {
   const { email, password, name } = await req.json();
@@ -20,8 +21,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const normalizedEmail = email.toLowerCase();
+
   const existing = await db.user.findUnique({
-    where: { email: email.toLowerCase() },
+    where: { email: normalizedEmail },
   });
 
   if (existing) {
@@ -32,15 +35,22 @@ export async function POST(req: NextRequest) {
   }
 
   const passwordHash = await hash(password, 12);
+  const founder = isFounder(normalizedEmail);
 
-  const stripeCustomer = await createStripeCustomer(email, name);
+  // Founders skip Stripe — they get permanent active access
+  let stripeCustomerId: string | null = null;
+  if (!founder) {
+    const stripeCustomer = await createStripeCustomer(email, name);
+    stripeCustomerId = stripeCustomer.id;
+  }
 
   const user = await db.user.create({
     data: {
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       passwordHash,
       name: name || null,
-      stripeCustomerId: stripeCustomer.id,
+      stripeCustomerId,
+      subscriptionStatus: founder ? "active" : "pending_audit",
     },
   });
 
