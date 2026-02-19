@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface Spark {
@@ -21,7 +21,7 @@ const STATUS_COLORS: Record<string, string> = {
   drafted: "border-purple-500/30 bg-purple-500/5",
 };
 
-export default function SparksPage() {
+function SparksContent() {
   const searchParams = useSearchParams();
   const pipelineId = searchParams.get("pipeline");
   const [sparks, setSparks] = useState<Spark[]>([]);
@@ -137,5 +137,13 @@ export default function SparksPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SparksPage() {
+  return (
+    <Suspense fallback={<div className="text-slate-400">Loading sparks...</div>}>
+      <SparksContent />
+    </Suspense>
   );
 }
