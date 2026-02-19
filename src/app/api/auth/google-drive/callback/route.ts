@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  if (!session?.user || !(session.user as { id?: string }).id) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -23,15 +23,17 @@ export async function GET(req: NextRequest) {
 
     const email = await getGoogleUserEmail(tokens.accessToken);
 
+    const userId = (session.user as { id: string }).id;
+
     await db.cloudConnection.upsert({
       where: {
         userId_provider: {
-          userId: session.user.id,
+          userId,
           provider: "google_drive",
         },
       },
       create: {
-        userId: session.user.id,
+        userId,
         provider: "google_drive",
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
@@ -49,7 +51,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(
       new URL("/dashboard/settings?cloud=google_connected", req.url)
     );
-  } catch {
+  } catch (err) {
+    console.error("Google Drive OAuth callback failed:", err);
     return NextResponse.redirect(
       new URL("/dashboard/settings?error=google_auth_failed", req.url)
     );
