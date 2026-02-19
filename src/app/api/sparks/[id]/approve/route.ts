@@ -5,13 +5,14 @@ import { requireActiveSession } from "@/lib/require-subscription";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { session, error } = await requireActiveSession();
   if (error) return error;
+  const { id } = await params;
 
   const spark = await db.spark.findFirst({
-    where: { id: params.id },
+    where: { id },
     include: {
       pipelineItem: { select: { userId: true, id: true } },
     },
@@ -22,7 +23,7 @@ export async function POST(
   }
 
   const updated = await db.spark.update({
-    where: { id: params.id },
+    where: { id },
     data: { status: "approved" },
   });
 
@@ -30,7 +31,7 @@ export async function POST(
   await inngest.send({
     name: "glueos/run-ghostwriter",
     data: {
-      sparkId: params.id,
+      sparkId: id,
       pipelineItemId: spark.pipelineItemId,
       userId: session.user.id,
     },

@@ -5,14 +5,15 @@ import { requireActiveSession } from "@/lib/require-subscription";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { session, error } = await requireActiveSession();
   if (error) return error;
+  const { id } = await params;
 
   const draft = await db.postDraft.findFirst({
     where: {
-      id: params.id,
+      id,
       spark: { pipelineItem: { userId: session.user.id } },
     },
   });
@@ -24,7 +25,7 @@ export async function POST(
   const linkedinPostId = await publishTextPost(session.user.id, draft.content);
 
   const updated = await db.postDraft.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       status: "published",
       publishedAt: new Date(),

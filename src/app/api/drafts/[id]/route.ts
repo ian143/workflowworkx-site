@@ -4,14 +4,15 @@ import { requireActiveSession } from "@/lib/require-subscription";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { session, error } = await requireActiveSession();
   if (error) return error;
+  const { id } = await params;
 
   const draft = await db.postDraft.findFirst({
     where: {
-      id: params.id,
+      id,
       spark: { pipelineItem: { userId: session.user.id } },
     },
     include: {
@@ -35,14 +36,15 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { session, error } = await requireActiveSession();
   if (error) return error;
+  const { id } = await params;
 
   const draft = await db.postDraft.findFirst({
     where: {
-      id: params.id,
+      id,
       spark: { pipelineItem: { userId: session.user.id } },
     },
   });
@@ -54,7 +56,7 @@ export async function PUT(
   const { content } = await req.json();
 
   const updated = await db.postDraft.update({
-    where: { id: params.id },
+    where: { id },
     data: { content },
   });
 

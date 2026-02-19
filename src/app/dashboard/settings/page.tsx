@@ -2,9 +2,9 @@
 
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 
-export default function SettingsPage() {
+function SettingsContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const subscriptionInactive = searchParams.get("subscription") === "inactive";
@@ -252,5 +252,13 @@ export default function SettingsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="text-slate-400">Loading settings...</div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }
