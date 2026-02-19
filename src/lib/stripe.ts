@@ -11,24 +11,32 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 export async function createCheckoutSession(
   customerId: string,
-  userEmail: string
+  userEmail: string,
+  options?: { includeSetup?: boolean }
 ) {
+  const includeSetup = options?.includeSetup ?? true;
+
+  const lineItems: { price: string; quantity: number }[] = [];
+
+  if (includeSetup) {
+    lineItems.push({
+      price: process.env.STRIPE_PRICE_ID_SETUP!,
+      quantity: 1,
+    });
+  }
+
+  lineItems.push({
+    price: process.env.STRIPE_PRICE_ID_MONTHLY!,
+    quantity: 1,
+  });
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
     payment_method_types: ["card"],
-    line_items: [
-      {
-        price: process.env.STRIPE_PRICE_ID_SETUP!,
-        quantity: 1,
-      },
-      {
-        price: process.env.STRIPE_PRICE_ID_MONTHLY!,
-        quantity: 1,
-      },
-    ],
+    line_items: lineItems,
     success_url: `${process.env.NEXTAUTH_URL}/dashboard?setup=complete`,
-    cancel_url: `${process.env.NEXTAUTH_URL}/login?cancelled=true`,
+    cancel_url: `${process.env.NEXTAUTH_URL}/dashboard/settings?cancelled=true`,
     metadata: {
       userEmail,
     },

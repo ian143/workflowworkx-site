@@ -9,6 +9,29 @@ export default function SettingsPage() {
   const searchParams = useSearchParams();
   const subscriptionInactive = searchParams.get("subscription") === "inactive";
   const [linkedinConnecting, setLinkedinConnecting] = useState(false);
+  const [resubLoading, setResubLoading] = useState<string | null>(null);
+
+  const subscriptionStatus = (
+    session?.user as { subscriptionStatus?: string } | undefined
+  )?.subscriptionStatus;
+  const isInactive =
+    subscriptionStatus === "cancelled" ||
+    subscriptionStatus === "paused" ||
+    subscriptionStatus === "pending_audit";
+
+  async function handleResubscribe(includeSetup: boolean) {
+    setResubLoading(includeSetup ? "setup" : "monthly");
+    const res = await fetch("/api/auth/resubscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ includeSetup }),
+    });
+    if (res.ok) {
+      const { url } = await res.json();
+      window.location.href = url;
+    }
+    setResubLoading(null);
+  }
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -174,23 +197,59 @@ export default function SettingsPage() {
       {/* Subscription Management */}
       <div className="glass rounded-xl p-6">
         <h2 className="text-lg font-bold mb-4">Subscription</h2>
-        <p className="text-sm text-slate-400 mb-4">
-          Manage your subscription through the Stripe customer portal.
-        </p>
-        <button
-          onClick={async () => {
-            const res = await fetch("/api/auth/billing-portal", {
-              method: "POST",
-            });
-            if (res.ok) {
-              const { url } = await res.json();
-              window.location.href = url;
-            }
-          }}
-          className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm transition-colors"
-        >
-          Manage Subscription
-        </button>
+
+        {isInactive ? (
+          <>
+            <p className="text-sm text-slate-400 mb-4">
+              Your subscription is not active. Choose an option below to
+              resubscribe.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => handleResubscribe(false)}
+                disabled={resubLoading !== null}
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {resubLoading === "monthly"
+                  ? "Redirecting..."
+                  : "Resubscribe (Monthly Only)"}
+              </button>
+              <button
+                onClick={() => handleResubscribe(true)}
+                disabled={resubLoading !== null}
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm transition-colors disabled:opacity-50"
+              >
+                {resubLoading === "setup"
+                  ? "Redirecting..."
+                  : "Resubscribe with Setup Fee"}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mt-3">
+              Already completed onboarding? Choose &quot;Monthly Only&quot; to
+              skip the setup fee.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-slate-400 mb-4">
+              Manage your subscription through the Stripe customer portal.
+            </p>
+            <button
+              onClick={async () => {
+                const res = await fetch("/api/auth/billing-portal", {
+                  method: "POST",
+                });
+                if (res.ok) {
+                  const { url } = await res.json();
+                  window.location.href = url;
+                }
+              }}
+              className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm transition-colors"
+            >
+              Manage Subscription
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
