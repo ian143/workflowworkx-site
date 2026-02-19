@@ -19,6 +19,11 @@ enum SubscriptionStatus {
   cancelled
 }
 
+enum CloudProvider {
+  google_drive
+  onedrive
+}
+
 model User {
   id                    String             @id @default(cuid())
   email                 String             @unique
@@ -38,8 +43,31 @@ model User {
   projects         Project[]
   pipelineItems    PipelineItem[]
   strategicTargets StrategicTarget[]
+  cloudConnections CloudConnection[]
 
   @@map("users")
+}
+
+// ============================================================
+// CLOUD DRIVE CONNECTIONS
+// Stores OAuth tokens for Google Drive / OneDrive per user
+// ============================================================
+
+model CloudConnection {
+  id           String        @id @default(cuid())
+  userId       String        @map("user_id")
+  provider     CloudProvider
+  accessToken  String        @map("access_token") @db.Text
+  refreshToken String        @map("refresh_token") @db.Text
+  tokenExpiry  DateTime      @map("token_expiry")
+  accountEmail String?       @map("account_email")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@map("cloud_connections")
 }
 
 // ============================================================
@@ -75,20 +103,22 @@ model IdentityVault {
 // ============================================================
 
 enum ProjectStatus {
-  uploading
+  linking @map("uploading")
   processing
   ready
   archived
 }
 
 model Project {
-  id              String        @id @default(cuid())
-  userId          String        @map("user_id")
-  name            String
-  status          ProjectStatus @default(uploading)
-  sourceFolderUrl String?       @map("source_folder_url")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
+  id                   String         @id @default(cuid())
+  userId               String         @map("user_id")
+  name                 String
+  status               ProjectStatus  @default(linking)
+  sourceFolderUrl      String?        @map("source_folder_url")
+  sourceFolderProvider CloudProvider? @map("source_folder_provider")
+  sourceFolderId       String?        @map("source_folder_id")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   files         ProjectFile[]
@@ -106,19 +136,23 @@ enum FileType {
 }
 
 model ProjectFile {
-  id            String   @id @default(cuid())
-  projectId     String   @map("project_id")
-  fileName      String   @map("file_name")
-  fileType      FileType @map("file_type")
-  mimeType      String   @map("mime_type")
-  storageKey    String   @map("storage_key")
-  extractedText String?  @map("extracted_text") @db.Text
-  fileSizeBytes Int      @map("file_size_bytes")
-  createdAt     DateTime @default(now()) @map("created_at")
+  id            String         @id @default(cuid())
+  projectId     String         @map("project_id")
+  fileName      String         @map("file_name")
+  fileType      FileType       @map("file_type")
+  mimeType      String         @map("mime_type")
+  storageKey    String?        @map("storage_key")
+  cloudFileId   String?        @map("cloud_file_id")
+  cloudProvider CloudProvider? @map("cloud_provider")
+  extractedText String?        @map("extracted_text") @db.Text
+  fileSizeBytes Int            @map("file_size_bytes")
+  lastSyncedAt  DateTime?      @map("last_synced_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
 
   project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   carouselSlides CarouselSlide[]
 
+  @@unique([projectId, cloudFileId, cloudProvider])
   @@map("project_files")
 }
 
