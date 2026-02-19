@@ -2,6 +2,11 @@ import { inngest } from "./client";
 import { db } from "@/lib/db";
 import { callClaude } from "@/lib/ai/client";
 import { buildScoutPrompt, SCOUT_SYSTEM_PROMPT } from "@/lib/ai/prompts/scout";
+import { getValidAccessToken } from "@/lib/cloud-auth";
+import { downloadFile as downloadGoogleFile } from "@/lib/google-drive";
+import { downloadFile as downloadOneDriveFile } from "@/lib/onedrive";
+import { extractText } from "@/lib/ingestion/pipeline";
+import type { FileType } from "@/lib/ingestion/pipeline";
 
 export const ingestFiles = inngest.createFunction(
   { id: "ingest-files", name: "Ingest Project Files" },
@@ -9,7 +14,7 @@ export const ingestFiles = inngest.createFunction(
   async ({ event, step }) => {
     const { projectId, pipelineItemId, userId } = event.data;
 
-    // Step 1: Extract text from all files (placeholder for Vercel Blob integration)
+    // Step 1: Download files from cloud drive and extract text
     await step.run("extract-text", async () => {
       const projectFiles = await db.projectFile.findMany({
         where: { projectId },
@@ -18,11 +23,22 @@ export const ingestFiles = inngest.createFunction(
       for (const file of projectFiles) {
         if (file.extractedText) continue;
         if (file.fileType === "image") continue;
-        // In production, fetch from Vercel Blob/S3 using file.storageKey
-        // and run extractText() from the ingestion pipeline
-      }
+        if (!file.cloudFileId || !file.cloudProvider) continue;
 
-      return projectFiles;
+        const accessToken = await getValidAccessToken(userId, file.cloudProvider);
+
+        const buffer =
+          file.cloudProvider === "google_drive"
+            ? await downloadGoogleFile(accessToken, file.cloudFileId)
+            : await downloadOneDriveFile(accessToken, file.cloudFileId);
+
+        const text = await extractText(buffer, file.fileType as FileType);
+
+        await db.projectFile.update({
+          where: { id: file.id },
+          data: { extractedText: text, lastSyncedAt: new Date() },
+        });
+      }
     });
 
     // Step 2: Run Scout (Forensic Analysis)

@@ -2,7 +2,14 @@
 
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+
+interface CloudConnection {
+  id: string;
+  provider: string;
+  accountEmail: string | null;
+  createdAt: string;
+}
 
 function SettingsContent() {
   const { data: session } = useSession();
@@ -10,6 +17,33 @@ function SettingsContent() {
   const subscriptionInactive = searchParams.get("subscription") === "inactive";
   const [linkedinConnecting, setLinkedinConnecting] = useState(false);
   const [resubLoading, setResubLoading] = useState<string | null>(null);
+  const [cloudConnections, setCloudConnections] = useState<CloudConnection[]>([]);
+  const [cloudConnecting, setCloudConnecting] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/cloud-connections")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setCloudConnections);
+  }, []);
+
+  async function connectCloudDrive(provider: "google-drive" | "onedrive") {
+    setCloudConnecting(provider);
+    const res = await fetch(`/api/auth/${provider}`);
+    if (res.ok) {
+      const { url } = await res.json();
+      window.location.href = url;
+    }
+    setCloudConnecting(null);
+  }
+
+  async function disconnectCloudDrive(provider: string) {
+    await fetch("/api/cloud-connections", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider }),
+    });
+    setCloudConnections((prev) => prev.filter((c) => c.provider !== provider));
+  }
 
   const subscriptionStatus = (
     session?.user as { subscriptionStatus?: string } | undefined
@@ -192,6 +226,70 @@ function SettingsContent() {
         >
           {linkedinConnecting ? "Connecting..." : "Connect LinkedIn"}
         </button>
+      </div>
+
+      {/* Cloud Drive Connections */}
+      <div className="glass rounded-xl p-6 mb-6">
+        <h2 className="text-lg font-bold mb-4">Cloud Drive Connections</h2>
+        <p className="text-sm text-slate-400 mb-4">
+          Connect your cloud storage to link project folders. Files are read at
+          processing time and never stored.
+        </p>
+
+        {cloudConnections.length > 0 && (
+          <div className="space-y-3 mb-4">
+            {cloudConnections.map((conn) => (
+              <div
+                key={conn.id}
+                className="flex items-center justify-between bg-white/5 rounded-lg px-4 py-3"
+              >
+                <div>
+                  <span className="text-sm font-medium">
+                    {conn.provider === "google_drive"
+                      ? "Google Drive"
+                      : "OneDrive"}
+                  </span>
+                  {conn.accountEmail && (
+                    <span className="text-xs text-slate-400 ml-2">
+                      ({conn.accountEmail})
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => disconnectCloudDrive(conn.provider)}
+                  className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                >
+                  Disconnect
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          {!cloudConnections.some((c) => c.provider === "google_drive") && (
+            <button
+              onClick={() => connectCloudDrive("google-drive")}
+              disabled={cloudConnecting !== null}
+              className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {cloudConnecting === "google-drive"
+                ? "Connecting..."
+                : "Connect Google Drive"}
+            </button>
+          )}
+          {!cloudConnections.some((c) => c.provider === "onedrive") && (
+            <button
+              onClick={() => connectCloudDrive("onedrive")}
+              disabled={cloudConnecting !== null}
+              className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {cloudConnecting === "onedrive"
+                ? "Connecting..."
+                : "Connect OneDrive"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Subscription Management */}

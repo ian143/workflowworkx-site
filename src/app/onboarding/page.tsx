@@ -248,10 +248,10 @@ export default function OnboardingPage() {
                   }
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  <option value="none">None</option>
-                  <option value="minimal">Minimal</option>
-                  <option value="average">Average</option>
-                  <option value="frequent">Frequent</option>
+                  <option value="none" className="text-black bg-white">None</option>
+                  <option value="minimal" className="text-black bg-white">Minimal</option>
+                  <option value="average" className="text-black bg-white">Average</option>
+                  <option value="frequent" className="text-black bg-white">Frequent</option>
                 </select>
               </div>
             </div>
@@ -379,12 +379,12 @@ export default function OnboardingPage() {
                   }
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  <option value="short_500_800">Short (500-800 chars)</option>
-                  <option value="medium_1300_1600">
+                  <option value="short_500_800" className="text-black bg-white">Short (500-800 chars)</option>
+                  <option value="medium_1300_1600" className="text-black bg-white">
                     Medium (1300-1600 chars)
                   </option>
-                  <option value="long_1800_2500">Long (1800-2500 chars)</option>
-                  <option value="flexible">Flexible</option>
+                  <option value="long_1800_2500" className="text-black bg-white">Long (1800-2500 chars)</option>
+                  <option value="flexible" className="text-black bg-white">Flexible</option>
                 </select>
               </div>
               <div>
@@ -404,10 +404,10 @@ export default function OnboardingPage() {
                   }
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  <option value="1_per_week">1 per week</option>
-                  <option value="2_5_per_week">2-5 per week</option>
-                  <option value="daily">Daily</option>
-                  <option value="sporadic">Sporadic</option>
+                  <option value="1_per_week" className="text-black bg-white">1 per week</option>
+                  <option value="2_5_per_week" className="text-black bg-white">2-5 per week</option>
+                  <option value="daily" className="text-black bg-white">Daily</option>
+                  <option value="sporadic" className="text-black bg-white">Sporadic</option>
                 </select>
               </div>
               <div>
@@ -432,9 +432,9 @@ export default function OnboardingPage() {
                   }
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  <option value="mixed">Mixed (text + carousel)</option>
-                  <option value="text_only">Text Only</option>
-                  <option value="carousel_focused">Carousel Focused</option>
+                  <option value="mixed" className="text-black bg-white">Mixed (text + carousel)</option>
+                  <option value="text_only" className="text-black bg-white">Text Only</option>
+                  <option value="carousel_focused" className="text-black bg-white">Carousel Focused</option>
                 </select>
               </div>
             </div>
