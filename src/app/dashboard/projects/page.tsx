@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState } from "react";
+
+interface CloudFolder {
+  id: string;
+  name: string;
+}
 
 interface CloudFile {
   id: string;
@@ -20,24 +25,28 @@ interface Project {
   _count: { files: number };
 }
 
+type Provider = "google_drive" | "onedrive";
+
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [showCreate, setShowCreate] = useState(false);
-  const [name, setName] = useState("");
+
+  // New project flow state
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerProvider, setPickerProvider] = useState<Provider | null>(null);
+  const [folderPath, setFolderPath] = useState<{ id: string; name: string }[]>([]);
+  const [folders, setFolders] = useState<CloudFolder[]>([]);
+  const [loadingFolders, setLoadingFolders] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // Folder linking state
-  const [linkingProjectId, setLinkingProjectId] = useState<string | null>(null);
-  const [folderUrl, setFolderUrl] = useState("");
-  const [folderProvider, setFolderProvider] = useState<"google_drive" | "onedrive">("google_drive");
-  const [linkingSaving, setLinkingSaving] = useState(false);
-
-  // File browsing state
+  // File browsing state (for existing projects)
   const [browsingProjectId, setBrowsingProjectId] = useState<string | null>(null);
   const [cloudFiles, setCloudFiles] = useState<CloudFile[]>([]);
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
   const [browsing, setBrowsing] = useState(false);
   const [selectingSaving, setSelectingSaving] = useState(false);
+
+  // Connected providers
+  const [connectedProviders, setConnectedProviders] = useState<string[]>([]);
 
   async function loadProjects() {
     const res = await fetch("/api/projects");
@@ -46,40 +55,67 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     loadProjects();
+    fetch("/api/cloud-connections")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((connections: { provider: string }[]) =>
+        setConnectedProviders(connections.map((c) => c.provider))
+      );
   }, []);
 
-  async function handleCreate(e: FormEvent) {
-    e.preventDefault();
+  async function loadFolders(provider: Provider, parentId: string = "root") {
+    setLoadingFolders(true);
+    const res = await fetch(
+      `/api/cloud-connections/browse?provider=${provider}&parentId=${parentId}`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      setFolders(data.folders);
+    } else {
+      setFolders([]);
+    }
+    setLoadingFolders(false);
+  }
+
+  function startPicker(provider: Provider) {
+    setPickerProvider(provider);
+    setFolderPath([{ id: "root", name: provider === "google_drive" ? "Google Drive" : "OneDrive" }]);
+    setFolders([]);
+    loadFolders(provider, "root");
+  }
+
+  function navigateToFolder(folder: CloudFolder) {
+    if (!pickerProvider) return;
+    setFolderPath((prev) => [...prev, { id: folder.id, name: folder.name }]);
+    loadFolders(pickerProvider, folder.id);
+  }
+
+  function navigateToBreadcrumb(index: number) {
+    if (!pickerProvider) return;
+    const target = folderPath[index];
+    setFolderPath((prev) => prev.slice(0, index + 1));
+    loadFolders(pickerProvider, target.id);
+  }
+
+  async function selectFolder(folderId: string, folderName: string) {
+    if (!pickerProvider) return;
     setCreating(true);
     const res = await fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (res.ok) {
-      setName("");
-      setShowCreate(false);
-      loadProjects();
-    }
-    setCreating(false);
-  }
-
-  async function handleLinkFolder(projectId: string) {
-    setLinkingSaving(true);
-    const res = await fetch(`/api/projects/${projectId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        sourceFolderUrl: folderUrl,
-        sourceFolderProvider: folderProvider,
+        name: folderName,
+        sourceFolderId: folderId,
+        sourceFolderProvider: pickerProvider,
       }),
     });
     if (res.ok) {
-      setLinkingProjectId(null);
-      setFolderUrl("");
+      setShowPicker(false);
+      setPickerProvider(null);
+      setFolderPath([]);
+      setFolders([]);
       loadProjects();
     }
-    setLinkingSaving(false);
+    setCreating(false);
   }
 
   async function handleBrowseFolder(projectId: string) {
@@ -133,40 +169,174 @@ export default function ProjectsPage() {
     archived: "text-slate-400 bg-slate-400/10",
   };
 
+  const hasGoogle = connectedProviders.includes("google_drive");
+  const hasOneDrive = connectedProviders.includes("onedrive");
+  const hasAnyProvider = hasGoogle || hasOneDrive;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold">Projects</h1>
         <button
-          onClick={() => setShowCreate(!showCreate)}
+          onClick={() => setShowPicker(!showPicker)}
           className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors"
         >
           New Project
         </button>
       </div>
 
-      {showCreate && (
-        <form onSubmit={handleCreate} className="glass rounded-xl p-4 mb-6 flex gap-3">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Project name"
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-            required
-          />
+      {/* New Project: Provider + Folder Picker */}
+      {showPicker && !pickerProvider && (
+        <div className="glass rounded-xl p-6 mb-6">
+          <h2 className="text-lg font-bold mb-2">Choose a cloud drive</h2>
+          <p className="text-sm text-slate-400 mb-4">
+            Select a folder from your connected drive. The folder name will become the project name.
+          </p>
+          {!hasAnyProvider ? (
+            <p className="text-sm text-slate-400">
+              No cloud drives connected.{" "}
+              <a href="/dashboard/settings" className="text-brand-400 hover:text-brand-300 underline">
+                Connect one in Settings
+              </a>{" "}
+              first.
+            </p>
+          ) : (
+            <div className="flex gap-3">
+              {hasGoogle && (
+                <button
+                  onClick={() => startPicker("google_drive")}
+                  className="flex items-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <span>Google Drive</span>
+                </button>
+              )}
+              {hasOneDrive && (
+                <button
+                  onClick={() => startPicker("onedrive")}
+                  className="flex items-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <span>OneDrive</span>
+                </button>
+              )}
+            </div>
+          )}
           <button
-            type="submit"
-            disabled={creating}
-            className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm transition-colors disabled:opacity-50"
+            onClick={() => setShowPicker(false)}
+            className="mt-3 text-xs text-slate-500 hover:text-slate-400 transition-colors"
           >
-            Create
+            Cancel
           </button>
-        </form>
+        </div>
+      )}
+
+      {/* Folder browser */}
+      {showPicker && pickerProvider && (
+        <div className="glass rounded-xl p-6 mb-6">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-1 mb-4 text-sm overflow-x-auto">
+            {folderPath.map((crumb, i) => (
+              <span key={crumb.id} className="flex items-center gap-1 shrink-0">
+                {i > 0 && <span className="text-slate-600">/</span>}
+                <button
+                  onClick={() => navigateToBreadcrumb(i)}
+                  className={`hover:text-brand-400 transition-colors ${
+                    i === folderPath.length - 1
+                      ? "text-white font-medium"
+                      : "text-slate-400"
+                  }`}
+                >
+                  {crumb.name}
+                </button>
+              </span>
+            ))}
+          </div>
+
+          {loadingFolders ? (
+            <p className="text-sm text-slate-400 py-4">Loading folders...</p>
+          ) : folders.length === 0 ? (
+            <div className="py-4">
+              <p className="text-sm text-slate-400 mb-3">No subfolders here.</p>
+              {folderPath.length > 1 && (
+                <button
+                  onClick={() => {
+                    const current = folderPath[folderPath.length - 1];
+                    selectFolder(current.id, current.name);
+                  }}
+                  disabled={creating}
+                  className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  {creating ? "Creating..." : `Select "${folderPath[folderPath.length - 1].name}"`}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-1 max-h-72 overflow-y-auto mb-4">
+              {folders.map((folder) => (
+                <div
+                  key={folder.id}
+                  className="flex items-center justify-between p-2.5 hover:bg-white/5 rounded-lg group"
+                >
+                  <button
+                    onClick={() => navigateToFolder(folder)}
+                    className="flex items-center gap-2 text-sm text-left flex-1 min-w-0"
+                  >
+                    <span className="text-yellow-400 shrink-0">&#128193;</span>
+                    <span className="truncate">{folder.name}</span>
+                  </button>
+                  <button
+                    onClick={() => selectFolder(folder.id, folder.name)}
+                    disabled={creating}
+                    className="px-3 py-1 bg-brand-600 hover:bg-brand-500 rounded text-xs font-medium transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50 shrink-0"
+                  >
+                    {creating ? "..." : "Select"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Select current folder button (when there are subfolders and we're not at root) */}
+          {folders.length > 0 && folderPath.length > 1 && (
+            <button
+              onClick={() => {
+                const current = folderPath[folderPath.length - 1];
+                selectFolder(current.id, current.name);
+              }}
+              disabled={creating}
+              className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm transition-colors disabled:opacity-50"
+            >
+              {creating ? "Creating..." : `Select current folder "${folderPath[folderPath.length - 1].name}"`}
+            </button>
+          )}
+
+          <div className="mt-3 flex gap-3">
+            <button
+              onClick={() => {
+                setPickerProvider(null);
+                setFolderPath([]);
+                setFolders([]);
+              }}
+              className="text-xs text-slate-500 hover:text-slate-400 transition-colors"
+            >
+              Back to drives
+            </button>
+            <button
+              onClick={() => {
+                setShowPicker(false);
+                setPickerProvider(null);
+                setFolderPath([]);
+                setFolders([]);
+              }}
+              className="text-xs text-slate-500 hover:text-slate-400 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
 
       <div className="space-y-3">
-        {projects.length === 0 ? (
+        {projects.length === 0 && !showPicker ? (
           <div className="glass rounded-xl p-12 text-center text-slate-400">
             No projects yet. Create one to get started.
           </div>
@@ -191,11 +361,6 @@ export default function ProjectsPage() {
                   {project.sourceFolderProvider === "google_drive"
                     ? "Google Drive"
                     : "OneDrive"}
-                  {project.sourceFolderUrl && (
-                    <span className="ml-1 text-slate-500 truncate inline-block max-w-[200px] align-bottom">
-                      {project.sourceFolderUrl}
-                    </span>
-                  )}
                 </p>
               )}
 
@@ -205,18 +370,7 @@ export default function ProjectsPage() {
                   {project._count.files !== 1 ? "s" : ""}
                 </span>
                 <div className="flex gap-2">
-                  {!project.sourceFolderProvider ? (
-                    <button
-                      onClick={() => {
-                        setLinkingProjectId(
-                          linkingProjectId === project.id ? null : project.id
-                        );
-                      }}
-                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors"
-                    >
-                      Link Folder
-                    </button>
-                  ) : (
+                  {project.sourceFolderProvider && (
                     <button
                       onClick={() => handleBrowseFolder(project.id)}
                       className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors"
@@ -238,64 +392,6 @@ export default function ProjectsPage() {
                   </button>
                 </div>
               </div>
-
-              {/* Link folder form */}
-              {linkingProjectId === project.id && (
-                <div className="mt-4 p-4 bg-white/5 rounded-lg space-y-3">
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">
-                      Cloud Provider
-                    </label>
-                    <select
-                      value={folderProvider}
-                      onChange={(e) =>
-                        setFolderProvider(
-                          e.target.value as "google_drive" | "onedrive"
-                        )
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    >
-                      <option value="google_drive" className="text-black bg-white">
-                        Google Drive
-                      </option>
-                      <option value="onedrive" className="text-black bg-white">
-                        OneDrive
-                      </option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">
-                      Folder URL
-                    </label>
-                    <input
-                      type="url"
-                      value={folderUrl}
-                      onChange={(e) => setFolderUrl(e.target.value)}
-                      placeholder={
-                        folderProvider === "google_drive"
-                          ? "https://drive.google.com/drive/folders/..."
-                          : "Paste OneDrive/SharePoint folder link"
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleLinkFolder(project.id)}
-                      disabled={!folderUrl || linkingSaving}
-                      className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm transition-colors disabled:opacity-50"
-                    >
-                      {linkingSaving ? "Linking..." : "Link Folder"}
-                    </button>
-                    <button
-                      onClick={() => setLinkingProjectId(null)}
-                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {/* Browse files panel */}
               {browsingProjectId === project.id && (
