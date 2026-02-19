@@ -109,6 +109,35 @@ export async function listFolderFiles(
     }));
 }
 
+export async function listFolders(
+  accessToken: string,
+  parentId: string = "root"
+): Promise<OneDriveFile[]> {
+  const url =
+    parentId === "root"
+      ? `${GRAPH_API_BASE}/me/drive/root/children?$select=id,name,folder,lastModifiedDateTime&$top=100`
+      : `${GRAPH_API_BASE}/me/drive/items/${parentId}/children?$select=id,name,folder,lastModifiedDateTime&$top=100`;
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Error(`OneDrive list folders failed: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return (data.value || [])
+    .filter((item: Record<string, unknown>) => item.folder)
+    .map((item: Record<string, unknown>) => ({
+      id: item.id as string,
+      name: item.name as string,
+      mimeType: "folder",
+      size: 0,
+      modifiedTime: item.lastModifiedDateTime as string,
+    }));
+}
+
 export async function downloadFile(
   accessToken: string,
   fileId: string

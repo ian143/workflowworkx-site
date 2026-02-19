@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const { session, error } = await requireActiveSession();
   if (error) return error;
 
-  const { name } = await req.json();
+  const { name, sourceFolderId, sourceFolderProvider } = await req.json();
 
   if (!name) {
     return NextResponse.json(
@@ -32,6 +32,9 @@ export async function POST(req: NextRequest) {
     data: {
       userId: session.user.id,
       name,
+      ...(sourceFolderId && sourceFolderProvider
+        ? { sourceFolderId, sourceFolderProvider }
+        : {}),
     },
   });
 

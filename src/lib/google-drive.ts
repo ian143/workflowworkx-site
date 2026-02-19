@@ -108,6 +108,32 @@ export async function listFolderFiles(
   }));
 }
 
+export async function listFolders(
+  accessToken: string,
+  parentId: string = "root"
+): Promise<DriveFile[]> {
+  const query = `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+  const fields = "files(id,name,mimeType,modifiedTime)";
+  const params = new URLSearchParams({ q: query, fields, pageSize: "100", orderBy: "name" });
+
+  const response = await fetch(`${DRIVE_API_BASE}/files?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Drive list folders failed: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return (data.files || []).map((f: Record<string, string>) => ({
+    id: f.id,
+    name: f.name,
+    mimeType: f.mimeType,
+    size: 0,
+    modifiedTime: f.modifiedTime,
+  }));
+}
+
 export async function downloadFile(
   accessToken: string,
   fileId: string

@@ -36,6 +36,9 @@ model User {
   linkedinRefreshToken  String?            @map("linkedin_refresh_token")
   linkedinTokenExpiry   DateTime?          @map("linkedin_token_expiry")
   linkedinUserId        String?            @map("linkedin_user_id")
+  watchFolderId         String?            @map("watch_folder_id")
+  watchFolderProvider   CloudProvider?     @map("watch_folder_provider")
+  watchFolderName       String?            @map("watch_folder_name")
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @updatedAt @map("updated_at")
 
