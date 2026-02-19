@@ -26,10 +26,13 @@ function SettingsContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const subscriptionInactive = searchParams.get("subscription") === "inactive";
+  const cloudStatus = searchParams.get("cloud");
+  const authError = searchParams.get("error");
   const [linkedinConnecting, setLinkedinConnecting] = useState(false);
   const [resubLoading, setResubLoading] = useState<string | null>(null);
   const [cloudConnections, setCloudConnections] = useState<CloudConnection[]>([]);
   const [cloudConnecting, setCloudConnecting] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Watch folder state
   const [watchFolder, setWatchFolder] = useState<WatchFolder | null>(null);
@@ -39,6 +42,21 @@ function SettingsContent() {
   const [folders, setFolders] = useState<CloudFolder[]>([]);
   const [loadingFolders, setLoadingFolders] = useState(false);
   const [savingWatch, setSavingWatch] = useState(false);
+
+  // Show OAuth status messages from redirect
+  useEffect(() => {
+    if (cloudStatus === "google_connected") {
+      setStatusMessage({ type: "success", text: "Google Drive connected successfully!" });
+    } else if (cloudStatus === "onedrive_connected") {
+      setStatusMessage({ type: "success", text: "OneDrive connected successfully!" });
+    } else if (authError === "google_auth_failed") {
+      setStatusMessage({ type: "error", text: "Google Drive connection failed. Please try again." });
+    } else if (authError === "no_code") {
+      setStatusMessage({ type: "error", text: "Google Drive authorization was cancelled." });
+    } else if (authError) {
+      setStatusMessage({ type: "error", text: `Connection failed: ${authError}` });
+    }
+  }, [cloudStatus, authError]);
 
   useEffect(() => {
     fetch("/api/cloud-connections")
@@ -212,6 +230,33 @@ function SettingsContent() {
             Your subscription is no longer active. Please renew your
             subscription below to regain access.
           </p>
+        </div>
+      )}
+
+      {/* OAuth status message */}
+      {statusMessage && (
+        <div
+          className={`rounded-xl p-4 mb-6 ${
+            statusMessage.type === "success"
+              ? "bg-green-500/10 border border-green-500/30"
+              : "bg-red-500/10 border border-red-500/30"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <p
+              className={`text-sm font-medium ${
+                statusMessage.type === "success" ? "text-green-400" : "text-red-400"
+              }`}
+            >
+              {statusMessage.text}
+            </p>
+            <button
+              onClick={() => setStatusMessage(null)}
+              className="text-xs text-slate-500 hover:text-slate-400 ml-4"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 
