@@ -298,9 +298,9 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
         <div className="max-w-lg text-center">
-          <div className="w-16 h-16 rounded-2xl bg-brand-600/20 border border-brand-500/30 flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 rounded-2xl bg-sage-100 border border-sage-300 flex items-center justify-center mx-auto mb-6">
             <svg
-              className="w-8 h-8 text-brand-400"
+              className="w-8 h-8 text-sage-600"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -317,10 +317,10 @@ export default function OnboardingPage() {
           <h1 className="text-3xl font-serif font-bold mb-3">
             Build Your Identity Vault
           </h1>
-          <p className="text-slate-400 mb-2 text-lg">
+          <p className="text-sage-700 mb-2 text-lg">
             A 20-minute conversation that captures everything.
           </p>
-          <p className="text-slate-500 text-sm mb-8 max-w-md mx-auto">
+          <p className="text-sage-600 text-sm mb-8 max-w-md mx-auto">
             Instead of filling out forms, you&apos;ll have a strategic
             conversation with our Brand Vault Architect. It will ask smart
             questions, probe for specifics, and compile your unique voice,
@@ -332,7 +332,7 @@ export default function OnboardingPage() {
             {SECTIONS.map((label) => (
               <div
                 key={label}
-                className="text-xs py-2 px-1 rounded-lg bg-white/5 text-slate-500 text-center"
+                className="text-xs py-2 px-1 rounded-lg bg-sage-100 text-sage-600 text-center"
               >
                 {label}
               </div>
@@ -341,7 +341,7 @@ export default function OnboardingPage() {
 
           <button
             onClick={startInterview}
-            className="px-8 py-3 bg-brand-600 hover:bg-brand-500 rounded-xl text-base font-medium transition-colors"
+            className="px-8 py-3 bg-sage-600 hover:bg-sage-700 text-white rounded-xl text-base font-medium transition-colors"
           >
             Start Interview
           </button>
@@ -358,9 +358,9 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-full bg-green-100 border border-green-300 flex items-center justify-center mx-auto mb-4">
             <svg
-              className="w-8 h-8 text-green-400"
+              className="w-8 h-8 text-green-600"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={2}
@@ -376,7 +376,7 @@ export default function OnboardingPage() {
           <h2 className="text-2xl font-serif font-bold mb-2">
             Vault Saved & Audited
           </h2>
-          <p className="text-slate-400">
+          <p className="text-sage-600">
             Redirecting to your dashboard...
           </p>
         </div>
@@ -391,19 +391,19 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Progress bar */}
-      <div className="border-b border-white/10 bg-slate-950/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-sage-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-sm font-medium text-slate-300">
+            <h1 className="text-sm font-medium text-black">
               Brand Vault Interview
             </h1>
             {currentSection < 5 && (
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-sage-600">
                 Section {currentSection + 1} of 5
               </span>
             )}
             {currentSection === 5 && (
-              <span className="text-xs text-green-400 font-medium">
+              <span className="text-xs text-green-600 font-medium">
                 Complete
               </span>
             )}
@@ -414,15 +414,15 @@ export default function OnboardingPage() {
                 <div
                   className={`h-1.5 rounded-full transition-all duration-500 ${
                     i < currentSection
-                      ? "bg-brand-500"
+                      ? "bg-sage-500"
                       : i === currentSection
-                      ? "bg-brand-600 animate-pulse"
-                      : "bg-white/10"
+                      ? "bg-sage-600 animate-pulse"
+                      : "bg-sage-200"
                   }`}
                 />
                 <p
                   className={`text-[10px] mt-1 text-center transition-colors ${
-                    i <= currentSection ? "text-brand-300" : "text-slate-600"
+                    i <= currentSection ? "text-sage-700" : "text-sage-400"
                   }`}
                 >
                   {label}
@@ -446,8 +446,8 @@ export default function OnboardingPage() {
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                   msg.role === "user"
-                    ? "bg-brand-600 text-white rounded-br-md"
-                    : "glass text-slate-200 rounded-bl-md"
+                    ? "bg-sage-600 text-white rounded-br-md"
+                    : "glass text-black rounded-bl-md"
                 }`}
               >
                 <MessageContent content={msg.content} />
@@ -458,7 +458,7 @@ export default function OnboardingPage() {
           {/* Streaming indicator */}
           {isStreaming && (
             <div className="flex justify-start">
-              <div className="max-w-[85%] rounded-2xl rounded-bl-md glass px-4 py-3 text-sm leading-relaxed text-slate-200">
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md glass px-4 py-3 text-sm leading-relaxed text-black">
                 {streamingText ? (
                   <MessageContent content={streamingText} />
                 ) : (
@@ -472,9 +472,9 @@ export default function OnboardingPage() {
           {extractedVault && !saving && (
             <div className="flex justify-center py-4">
               <div className="glass rounded-xl p-6 text-center max-w-sm">
-                <div className="w-10 h-10 rounded-full bg-brand-600/20 border border-brand-500/30 flex items-center justify-center mx-auto mb-3">
+                <div className="w-10 h-10 rounded-full bg-sage-100 border border-sage-300 flex items-center justify-center mx-auto mb-3">
                   <svg
-                    className="w-5 h-5 text-brand-400"
+                    className="w-5 h-5 text-sage-600"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
@@ -487,14 +487,14 @@ export default function OnboardingPage() {
                     />
                   </svg>
                 </div>
-                <p className="text-sm text-slate-300 mb-4">
+                <p className="text-sm text-sage-700 mb-4">
                   Your Brand Vault has been compiled. Save it to power your
                   content engine.
                 </p>
                 <button
                   onClick={handleSaveVault}
                   disabled={saving}
-                  className="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 w-full"
+                  className="px-6 py-2.5 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 w-full"
                 >
                   {saving ? "Saving..." : "Save & Continue to Dashboard"}
                 </button>
@@ -505,7 +505,7 @@ export default function OnboardingPage() {
           {/* Error display */}
           {error && (
             <div className="flex justify-center">
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-300 max-w-sm">
+              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 max-w-sm">
                 {error}
               </div>
             </div>
@@ -517,7 +517,7 @@ export default function OnboardingPage() {
 
       {/* Input area */}
       {!extractedVault && (
-        <div className="border-t border-white/10 bg-slate-950/80 backdrop-blur-sm sticky bottom-0">
+        <div className="border-t border-sage-200 bg-white/80 backdrop-blur-sm sticky bottom-0">
           <div className="max-w-3xl mx-auto px-4 py-3">
             <div className="flex gap-2 items-end">
               <textarea
@@ -530,7 +530,7 @@ export default function OnboardingPage() {
                   isStreaming ? "Waiting for response..." : "Type your answer..."
                 }
                 rows={1}
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:opacity-50 min-h-[42px] max-h-[120px]"
+                className="flex-1 bg-white border border-sage-200 rounded-xl px-4 py-2.5 text-sm text-black placeholder-sage-400 resize-none focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent disabled:opacity-50 min-h-[42px] max-h-[120px]"
                 style={{
                   height: "auto",
                   overflow: "hidden",
@@ -545,7 +545,7 @@ export default function OnboardingPage() {
               <button
                 onClick={handleSend}
                 disabled={isStreaming || !input.trim()}
-                className="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 rounded-xl text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                className="px-4 py-2.5 bg-sage-600 hover:bg-sage-700 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
               >
                 <svg
                   className="w-4 h-4"
@@ -562,7 +562,7 @@ export default function OnboardingPage() {
                 </svg>
               </button>
             </div>
-            <p className="text-[10px] text-slate-600 mt-1.5 text-center">
+            <p className="text-[10px] text-sage-500 mt-1.5 text-center">
               Press Enter to send, Shift+Enter for new line
             </p>
           </div>
@@ -589,7 +589,7 @@ function MessageContent({ content }: { content: string }) {
           return (
             <pre
               key={i}
-              className="bg-black/30 rounded-lg p-3 text-xs overflow-x-auto font-mono text-slate-300 border border-white/5"
+              className="bg-sage-100 rounded-lg p-3 text-xs overflow-x-auto font-mono text-sage-800 border border-sage-200"
             >
               {code.trim()}
             </pre>
@@ -604,7 +604,7 @@ function MessageContent({ content }: { content: string }) {
               const processed = line.split(/(\*\*.*?\*\*)/g).map((seg, k) => {
                 if (seg.startsWith("**") && seg.endsWith("**")) {
                   return (
-                    <strong key={k} className="font-semibold text-white">
+                    <strong key={k} className="font-semibold text-black">
                       {seg.slice(2, -2)}
                     </strong>
                   );
@@ -620,7 +620,7 @@ function MessageContent({ content }: { content: string }) {
               if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
                 return (
                   <div key={j} className="flex gap-2 ml-1">
-                    <span className="text-brand-400 shrink-0">&#8226;</span>
+                    <span className="text-sage-600 shrink-0">&#8226;</span>
                     <span>{processed}</span>
                   </div>
                 );
@@ -631,7 +631,7 @@ function MessageContent({ content }: { content: string }) {
               if (numMatch) {
                 return (
                   <div key={j} className="flex gap-2 ml-1">
-                    <span className="text-brand-400 shrink-0 tabular-nums">
+                    <span className="text-sage-600 shrink-0 tabular-nums">
                       {numMatch[1]}.
                     </span>
                     <span>{processed}</span>
@@ -651,9 +651,9 @@ function MessageContent({ content }: { content: string }) {
 function TypingIndicator() {
   return (
     <div className="flex gap-1.5 items-center py-1">
-      <div className="w-2 h-2 rounded-full bg-brand-400 animate-bounce [animation-delay:0ms]" />
-      <div className="w-2 h-2 rounded-full bg-brand-400 animate-bounce [animation-delay:150ms]" />
-      <div className="w-2 h-2 rounded-full bg-brand-400 animate-bounce [animation-delay:300ms]" />
+      <div className="w-2 h-2 rounded-full bg-sage-500 animate-bounce [animation-delay:0ms]" />
+      <div className="w-2 h-2 rounded-full bg-sage-500 animate-bounce [animation-delay:150ms]" />
+      <div className="w-2 h-2 rounded-full bg-sage-500 animate-bounce [animation-delay:300ms]" />
     </div>
   );
 }

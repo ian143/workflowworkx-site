@@ -40,17 +40,17 @@ export default function PublishPage() {
 
       {approved.length > 0 && (
         <div className="mb-10">
-          <h2 className="text-lg font-medium text-green-400 mb-4">
+          <h2 className="text-lg font-medium text-green-600 mb-4">
             Ready to Publish ({approved.length})
           </h2>
           <div className="space-y-3">
             {approved.map((draft) => (
               <div key={draft.id} className="glass rounded-xl p-5">
-                <p className="text-xs text-slate-400 mb-2">
+                <p className="text-xs text-sage-600 mb-2">
                   {draft.spark.pipelineItem.project.name} &middot; &ldquo;
                   {draft.spark.sparkText}&rdquo;
                 </p>
-                <p className="text-sm text-slate-300 line-clamp-3 mb-4">
+                <p className="text-sm text-sage-700 line-clamp-3 mb-4">
                   {draft.content}
                 </p>
                 <button
@@ -60,7 +60,7 @@ export default function PublishPage() {
                     });
                     window.location.reload();
                   }}
-                  className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   Publish Now
                 </button>
@@ -72,24 +72,24 @@ export default function PublishPage() {
 
       {published.length > 0 && (
         <div>
-          <h2 className="text-lg font-medium text-slate-400 mb-4">
+          <h2 className="text-lg font-medium text-sage-600 mb-4">
             Published ({published.length})
           </h2>
           <div className="space-y-3">
             {published.map((draft) => (
               <div key={draft.id} className="glass rounded-xl p-5">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-sage-600">
                     {draft.spark.pipelineItem.project.name}
                   </p>
                   {draft.publishedAt && (
-                    <span className="text-xs text-emerald-400">
+                    <span className="text-xs text-emerald-600">
                       Published{" "}
                       {new Date(draft.publishedAt).toLocaleDateString()}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-slate-300 line-clamp-2">
+                <p className="text-sm text-sage-700 line-clamp-2">
                   {draft.content}
                 </p>
               </div>
@@ -99,7 +99,7 @@ export default function PublishPage() {
       )}
 
       {drafts.length === 0 && (
-        <div className="glass rounded-xl p-12 text-center text-slate-400">
+        <div className="glass rounded-xl p-12 text-center text-sage-600">
           No approved or published drafts yet.
         </div>
       )}
