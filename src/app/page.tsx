@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Logo from "@/components/Logo";
 
 export default function LandingPage() {
   return (
@@ -6,9 +7,7 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-md border-b border-sage-200">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="text-xl font-bold tracking-tight text-black">
-            Glue<span className="text-sage-600">OS</span>
-          </span>
+          <Logo size="md" />
           <div className="flex gap-4 items-center">
             <Link
               href="/login"
@@ -31,7 +30,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl md:text-6xl font-serif font-bold leading-tight mb-6 text-black">
             Move Beyond Social Silence.{" "}
-            <span className="text-sage-600">Architect Your Authority.</span>
+            <span className="text-[#C4A882]">Architect Your Authority.</span>
           </h1>
           <p className="text-lg md:text-xl text-sage-700 max-w-2xl mx-auto mb-10">
             GlueOS transforms your project wins into high-authority LinkedIn
