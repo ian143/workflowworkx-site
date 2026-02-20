@@ -23,13 +23,13 @@ const STATUS_ORDER = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  new: "text-slate-400 bg-slate-400/10",
-  scouting: "text-blue-400 bg-blue-400/10",
-  sparks_generated: "text-amber-400 bg-amber-400/10",
-  drafting: "text-purple-400 bg-purple-400/10",
-  ready: "text-green-400 bg-green-400/10",
-  published: "text-emerald-400 bg-emerald-400/10",
-  error: "text-red-400 bg-red-400/10",
+  new: "text-sage-700 bg-sage-100",
+  scouting: "text-blue-700 bg-blue-50",
+  sparks_generated: "text-amber-700 bg-amber-50",
+  drafting: "text-purple-700 bg-purple-50",
+  ready: "text-green-700 bg-green-50",
+  published: "text-emerald-700 bg-emerald-50",
+  error: "text-red-700 bg-red-50",
 };
 
 export default function PipelinePage() {
@@ -58,7 +58,7 @@ export default function PipelinePage() {
       </div>
 
       {items.length === 0 ? (
-        <div className="glass rounded-xl p-12 text-center text-slate-400">
+        <div className="glass rounded-xl p-12 text-center text-sage-600">
           No pipeline items yet. Upload and ingest a project to start the Steel
           Loop.
         </div>
@@ -80,7 +80,7 @@ export default function PipelinePage() {
                   {item.status.replace(/_/g, " ")}
                 </span>
               </div>
-              <div className="flex gap-4 text-sm text-slate-400">
+              <div className="flex gap-4 text-sm text-sage-600">
                 <span>Priority: {item.priority}</span>
                 <span>{item._count.sparks} sparks</span>
                 <span>

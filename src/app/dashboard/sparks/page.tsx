@@ -15,10 +15,10 @@ interface Spark {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "border-amber-500/30 bg-amber-500/5",
-  approved: "border-green-500/30 bg-green-500/5",
-  rejected: "border-red-500/30 bg-red-500/5",
-  drafted: "border-purple-500/30 bg-purple-500/5",
+  pending: "border-amber-300 bg-amber-50",
+  approved: "border-green-300 bg-green-50",
+  rejected: "border-red-300 bg-red-50",
+  drafted: "border-purple-300 bg-purple-50",
 };
 
 function SparksContent() {
@@ -68,7 +68,7 @@ function SparksContent() {
 
       {pendingSparks.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-lg font-medium text-amber-400 mb-4">
+          <h2 className="text-lg font-medium text-amber-600 mb-4">
             Awaiting Review ({pendingSparks.length})
           </h2>
           <div className="space-y-3">
@@ -77,7 +77,7 @@ function SparksContent() {
                 key={spark.id}
                 className={`rounded-xl p-5 border ${STATUS_COLORS[spark.status]}`}
               >
-                <p className="text-xs text-slate-400 mb-2">
+                <p className="text-xs text-sage-600 mb-2">
                   {spark.pipelineItem.project.name} &middot; Spark{" "}
                   {spark.sortOrder}
                 </p>
@@ -85,13 +85,13 @@ function SparksContent() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleAction(spark.id, "approve")}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     Approve
                   </button>
                   <button
                     onClick={() => handleAction(spark.id, "reject")}
-                    className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-300 rounded-lg text-sm transition-colors"
+                    className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-sm transition-colors"
                   >
                     Reject
                   </button>
@@ -104,7 +104,7 @@ function SparksContent() {
 
       {otherSparks.length > 0 && (
         <div>
-          <h2 className="text-lg font-medium text-slate-400 mb-4">
+          <h2 className="text-lg font-medium text-sage-600 mb-4">
             Reviewed ({otherSparks.length})
           </h2>
           <div className="space-y-3">
@@ -115,13 +115,13 @@ function SparksContent() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-slate-400 mb-1">
+                    <p className="text-xs text-sage-600 mb-1">
                       {spark.pipelineItem.project.name} &middot; Spark{" "}
                       {spark.sortOrder}
                     </p>
                     <p className="font-bold">{spark.sparkText}</p>
                   </div>
-                  <span className="text-xs capitalize text-slate-400">
+                  <span className="text-xs capitalize text-sage-600">
                     {spark.status}
                   </span>
                 </div>
@@ -132,7 +132,7 @@ function SparksContent() {
       )}
 
       {sparks.length === 0 && (
-        <div className="glass rounded-xl p-12 text-center text-slate-400">
+        <div className="glass rounded-xl p-12 text-center text-sage-600">
           No sparks yet. Run the Scout + Architect phases on a project first.
         </div>
       )}
@@ -142,7 +142,7 @@ function SparksContent() {
 
 export default function SparksPage() {
   return (
-    <Suspense fallback={<div className="text-slate-400">Loading sparks...</div>}>
+    <Suspense fallback={<div className="text-sage-600">Loading sparks...</div>}>
       <SparksContent />
     </Suspense>
   );

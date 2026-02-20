@@ -243,8 +243,8 @@ function SettingsContent() {
 
       {/* Subscription inactive banner */}
       {subscriptionInactive && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-          <p className="text-red-400 text-sm font-medium">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+          <p className="text-red-600 text-sm font-medium">
             Your subscription is no longer active. Please renew your
             subscription below to regain access.
           </p>
@@ -256,21 +256,21 @@ function SettingsContent() {
         <div
           className={`rounded-xl p-4 mb-6 ${
             statusMessage.type === "success"
-              ? "bg-green-500/10 border border-green-500/30"
-              : "bg-red-500/10 border border-red-500/30"
+              ? "bg-green-50 border border-green-200"
+              : "bg-red-50 border border-red-200"
           }`}
         >
           <div className="flex items-center justify-between">
             <p
               className={`text-sm font-medium ${
-                statusMessage.type === "success" ? "text-green-400" : "text-red-400"
+                statusMessage.type === "success" ? "text-green-600" : "text-red-600"
               }`}
             >
               {statusMessage.text}
             </p>
             <button
               onClick={() => setStatusMessage(null)}
-              className="text-xs text-slate-500 hover:text-slate-400 ml-4"
+              className="text-xs text-sage-500 hover:text-sage-500 ml-4"
             >
               Dismiss
             </button>
@@ -283,15 +283,15 @@ function SettingsContent() {
         <h2 className="text-lg font-bold mb-4">Account</h2>
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-slate-400">Email</span>
+            <span className="text-sm text-sage-600">Email</span>
             <span className="text-sm">{session?.user?.email ?? "..."}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-slate-400">Name</span>
+            <span className="text-sm text-sage-600">Name</span>
             <span className="text-sm">{session?.user?.name ?? "..."}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-slate-400">Subscription</span>
+            <span className="text-sm text-sage-600">Subscription</span>
             <span className="text-sm capitalize">
               {(session?.user as { subscriptionStatus?: string })
                 ?.subscriptionStatus?.replace(/_/g, " ") ?? "..."}
@@ -305,51 +305,51 @@ function SettingsContent() {
         <h2 className="text-lg font-bold mb-4">Change Password</h2>
         <form onSubmit={handlePasswordChange} className="space-y-4 max-w-sm">
           <div>
-            <label className="block text-sm text-slate-400 mb-1">
+            <label className="block text-sm text-sage-600 mb-1">
               Current Password
             </label>
             <input
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full bg-white border border-sage-200 rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-sage-500"
               required
             />
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">
+            <label className="block text-sm text-sage-600 mb-1">
               New Password
             </label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full bg-white border border-sage-200 rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-sage-500"
               minLength={8}
               required
             />
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">
+            <label className="block text-sm text-sage-600 mb-1">
               Confirm New Password
             </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full bg-white border border-sage-200 rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-sage-500"
               minLength={8}
               required
             />
           </div>
 
-          {pwError && <p className="text-red-400 text-sm">{pwError}</p>}
-          {pwSuccess && <p className="text-green-400 text-sm">{pwSuccess}</p>}
+          {pwError && <p className="text-red-600 text-sm">{pwError}</p>}
+          {pwSuccess && <p className="text-green-600 text-sm">{pwSuccess}</p>}
 
           <button
             type="submit"
             disabled={pwLoading}
-            className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {pwLoading ? "Updating..." : "Update Password"}
           </button>
@@ -359,18 +359,18 @@ function SettingsContent() {
       {/* LinkedIn Connection */}
       <div className="glass rounded-xl p-6 mb-6">
         <h2 className="text-lg font-bold mb-4">LinkedIn Connection</h2>
-        <p className="text-sm text-slate-400 mb-4">
+        <p className="text-sm text-sage-600 mb-4">
           Connect your LinkedIn account to publish posts directly from GlueOS.
         </p>
         {linkedinConnected ? (
-          <div className="flex items-center justify-between bg-white/5 rounded-lg px-4 py-3">
+          <div className="flex items-center justify-between bg-sage-50 rounded-lg px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-green-400" />
               <span className="text-sm font-medium">LinkedIn Connected</span>
             </div>
             <button
               onClick={disconnectLinkedIn}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors"
+              className="text-xs text-red-600 hover:text-red-500 transition-colors"
             >
               Disconnect
             </button>
@@ -389,7 +389,7 @@ function SettingsContent() {
       {/* Cloud Drive Connections */}
       <div className="glass rounded-xl p-6 mb-6">
         <h2 className="text-lg font-bold mb-4">Cloud Drive Connections</h2>
-        <p className="text-sm text-slate-400 mb-4">
+        <p className="text-sm text-sage-600 mb-4">
           Connect your cloud storage to link project folders. Files are read at
           processing time and never stored.
         </p>
@@ -399,7 +399,7 @@ function SettingsContent() {
             {cloudConnections.map((conn) => (
               <div
                 key={conn.id}
-                className="flex items-center justify-between bg-white/5 rounded-lg px-4 py-3"
+                className="flex items-center justify-between bg-sage-50 rounded-lg px-4 py-3"
               >
                 <div>
                   <span className="text-sm font-medium">
@@ -408,14 +408,14 @@ function SettingsContent() {
                       : "OneDrive"}
                   </span>
                   {conn.accountEmail && (
-                    <span className="text-xs text-slate-400 ml-2">
+                    <span className="text-xs text-sage-600 ml-2">
                       ({conn.accountEmail})
                     </span>
                   )}
                 </div>
                 <button
                   onClick={() => disconnectCloudDrive(conn.provider)}
-                  className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                  className="text-xs text-red-600 hover:text-red-500 transition-colors"
                 >
                   Disconnect
                 </button>
@@ -429,7 +429,7 @@ function SettingsContent() {
             <button
               onClick={() => connectCloudDrive("google-drive")}
               disabled={cloudConnecting !== null}
-              className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-sage-100 hover:bg-sage-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
               {cloudConnecting === "google-drive"
                 ? "Connecting..."
@@ -440,7 +440,7 @@ function SettingsContent() {
             <button
               onClick={() => connectCloudDrive("onedrive")}
               disabled={cloudConnecting !== null}
-              className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-sage-100 hover:bg-sage-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
               {cloudConnecting === "onedrive"
                 ? "Connecting..."
@@ -453,16 +453,16 @@ function SettingsContent() {
       {/* Watch Folder */}
       <div className="glass rounded-xl p-6 mb-6">
         <h2 className="text-lg font-bold mb-4">Project Watch Folder</h2>
-        <p className="text-sm text-slate-400 mb-4">
+        <p className="text-sm text-sage-600 mb-4">
           Set a root folder to watch. Each subfolder will automatically appear as a
           potential project on the Projects page.
         </p>
 
         {watchFolder?.watchFolderId ? (
-          <div className="flex items-center justify-between bg-white/5 rounded-lg px-4 py-3 mb-4">
+          <div className="flex items-center justify-between bg-sage-50 rounded-lg px-4 py-3 mb-4">
             <div>
               <span className="text-sm font-medium">{watchFolder.watchFolderName}</span>
-              <span className="text-xs text-slate-400 ml-2">
+              <span className="text-xs text-sage-600 ml-2">
                 ({watchFolder.watchFolderProvider === "google_drive" ? "Google Drive" : "OneDrive"})
               </span>
             </div>
@@ -472,13 +472,13 @@ function SettingsContent() {
                   setShowFolderPicker(true);
                   setPickerProvider(null);
                 }}
-                className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
+                className="text-xs text-sage-600 hover:text-sage-800 transition-colors"
               >
                 Change
               </button>
               <button
                 onClick={removeWatchFolder}
-                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                className="text-xs text-red-600 hover:text-red-500 transition-colors"
               >
                 Remove
               </button>
@@ -489,7 +489,7 @@ function SettingsContent() {
             <button
               onClick={() => setShowFolderPicker(true)}
               disabled={cloudConnections.length === 0}
-              className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-sage-100 hover:bg-sage-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
               {cloudConnections.length === 0
                 ? "Connect a cloud drive first"
@@ -500,13 +500,13 @@ function SettingsContent() {
 
         {/* Provider selection */}
         {showFolderPicker && !pickerProvider && (
-          <div className="mt-4 p-4 bg-white/5 rounded-lg">
-            <p className="text-sm text-slate-400 mb-3">Choose a drive:</p>
+          <div className="mt-4 p-4 bg-sage-50 rounded-lg">
+            <p className="text-sm text-sage-600 mb-3">Choose a drive:</p>
             <div className="flex gap-3">
               {cloudConnections.some((c) => c.provider === "google_drive") && (
                 <button
                   onClick={() => startFolderPicker("google_drive")}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors"
+                  className="px-4 py-2 bg-sage-50 hover:bg-sage-100 rounded-lg text-sm transition-colors"
                 >
                   Google Drive
                 </button>
@@ -514,7 +514,7 @@ function SettingsContent() {
               {cloudConnections.some((c) => c.provider === "onedrive") && (
                 <button
                   onClick={() => startFolderPicker("onedrive")}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors"
+                  className="px-4 py-2 bg-sage-50 hover:bg-sage-100 rounded-lg text-sm transition-colors"
                 >
                   OneDrive
                 </button>
@@ -522,7 +522,7 @@ function SettingsContent() {
             </div>
             <button
               onClick={() => setShowFolderPicker(false)}
-              className="mt-2 text-xs text-slate-500 hover:text-slate-400 transition-colors"
+              className="mt-2 text-xs text-sage-500 hover:text-sage-500 transition-colors"
             >
               Cancel
             </button>
@@ -531,16 +531,16 @@ function SettingsContent() {
 
         {/* Folder browser */}
         {showFolderPicker && pickerProvider && (
-          <div className="mt-4 p-4 bg-white/5 rounded-lg">
+          <div className="mt-4 p-4 bg-sage-50 rounded-lg">
             {/* Breadcrumb */}
             <div className="flex items-center gap-1 mb-3 text-sm overflow-x-auto">
               {folderPath.map((crumb, i) => (
                 <span key={crumb.id} className="flex items-center gap-1 shrink-0">
-                  {i > 0 && <span className="text-slate-600">/</span>}
+                  {i > 0 && <span className="text-sage-400">/</span>}
                   <button
                     onClick={() => navigateBreadcrumb(i)}
-                    className={`hover:text-brand-400 transition-colors ${
-                      i === folderPath.length - 1 ? "text-white font-medium" : "text-slate-400"
+                    className={`hover:text-sage-700 transition-colors ${
+                      i === folderPath.length - 1 ? "text-black font-medium" : "text-sage-600"
                     }`}
                   >
                     {crumb.name}
@@ -550,10 +550,10 @@ function SettingsContent() {
             </div>
 
             {loadingFolders ? (
-              <p className="text-sm text-slate-400 py-3">Loading folders...</p>
+              <p className="text-sm text-sage-600 py-3">Loading folders...</p>
             ) : folders.length === 0 ? (
               <div className="py-3">
-                <p className="text-sm text-slate-400 mb-3">No subfolders here.</p>
+                <p className="text-sm text-sage-600 mb-3">No subfolders here.</p>
                 {folderPath.length > 1 && (
                   <button
                     onClick={() => {
@@ -561,7 +561,7 @@ function SettingsContent() {
                       selectWatchFolder(current.id, current.name);
                     }}
                     disabled={savingWatch}
-                    className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                    className="px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                   >
                     {savingWatch ? "Saving..." : `Set "${folderPath[folderPath.length - 1].name}" as watch folder`}
                   </button>
@@ -572,7 +572,7 @@ function SettingsContent() {
                 {folders.map((folder) => (
                   <div
                     key={folder.id}
-                    className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg group"
+                    className="flex items-center justify-between p-2 hover:bg-sage-100 rounded-lg group"
                   >
                     <button
                       onClick={() => navigateFolder(folder)}
@@ -584,7 +584,7 @@ function SettingsContent() {
                     <button
                       onClick={() => selectWatchFolder(folder.id, folder.name)}
                       disabled={savingWatch}
-                      className="px-3 py-1 bg-brand-600 hover:bg-brand-500 rounded text-xs font-medium transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50 shrink-0"
+                      className="px-3 py-1 bg-sage-600 hover:bg-sage-700 text-white rounded text-xs font-medium transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50 shrink-0"
                     >
                       {savingWatch ? "..." : "Select"}
                     </button>
@@ -600,7 +600,7 @@ function SettingsContent() {
                   selectWatchFolder(current.id, current.name);
                 }}
                 disabled={savingWatch}
-                className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-sage-100 hover:bg-sage-200 rounded-lg text-sm transition-colors disabled:opacity-50"
               >
                 {savingWatch ? "Saving..." : `Set "${folderPath[folderPath.length - 1].name}" as watch folder`}
               </button>
@@ -613,7 +613,7 @@ function SettingsContent() {
                   setFolderPath([]);
                   setFolders([]);
                 }}
-                className="text-xs text-slate-500 hover:text-slate-400 transition-colors"
+                className="text-xs text-sage-500 hover:text-sage-500 transition-colors"
               >
                 Back to drives
               </button>
@@ -624,7 +624,7 @@ function SettingsContent() {
                   setFolderPath([]);
                   setFolders([]);
                 }}
-                className="text-xs text-slate-500 hover:text-slate-400 transition-colors"
+                className="text-xs text-sage-500 hover:text-sage-500 transition-colors"
               >
                 Cancel
               </button>
@@ -639,7 +639,7 @@ function SettingsContent() {
 
         {isInactive ? (
           <>
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-sage-600 mb-4">
               Your subscription is not active. Choose an option below to
               resubscribe.
             </p>
@@ -647,7 +647,7 @@ function SettingsContent() {
               <button
                 onClick={() => handleResubscribe(false)}
                 disabled={resubLoading !== null}
-                className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
               >
                 {resubLoading === "monthly"
                   ? "Redirecting..."
@@ -656,21 +656,21 @@ function SettingsContent() {
               <button
                 onClick={() => handleResubscribe(true)}
                 disabled={resubLoading !== null}
-                className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-sage-100 hover:bg-sage-200 rounded-lg text-sm transition-colors disabled:opacity-50"
               >
                 {resubLoading === "setup"
                   ? "Redirecting..."
                   : "Resubscribe with Setup Fee"}
               </button>
             </div>
-            <p className="text-xs text-slate-500 mt-3">
+            <p className="text-xs text-sage-500 mt-3">
               Already completed onboarding? Choose &quot;Monthly Only&quot; to
               skip the setup fee.
             </p>
           </>
         ) : (
           <>
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-sage-600 mb-4">
               Manage your subscription through the Stripe customer portal.
             </p>
             <button
@@ -683,7 +683,7 @@ function SettingsContent() {
                   window.location.href = url;
                 }
               }}
-              className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm transition-colors"
+              className="px-4 py-2 bg-sage-100 hover:bg-sage-200 rounded-lg text-sm transition-colors"
             >
               Manage Subscription
             </button>
@@ -696,7 +696,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="text-slate-400">Loading settings...</div>}>
+    <Suspense fallback={<div className="text-sage-600">Loading settings...</div>}>
       <SettingsContent />
     </Suspense>
   );

@@ -11,10 +11,10 @@ interface VaultData {
 }
 
 const AUDIT_STATUS_COLORS: Record<string, string> = {
-  pending: "text-slate-400 bg-slate-400/10",
-  passed: "text-green-400 bg-green-400/10",
-  passed_with_warnings: "text-amber-400 bg-amber-400/10",
-  failed: "text-red-400 bg-red-400/10",
+  pending: "text-sage-700 bg-sage-100",
+  passed: "text-green-700 bg-green-50",
+  passed_with_warnings: "text-amber-700 bg-amber-50",
+  failed: "text-red-700 bg-red-50",
 };
 
 export default function VaultPage() {
@@ -83,13 +83,13 @@ export default function VaultPage() {
       <div>
         <h1 className="text-2xl font-bold mb-4">Identity Vault</h1>
         <div className="glass rounded-xl p-12 text-center">
-          <p className="text-slate-400 mb-4">
+          <p className="text-sage-600 mb-4">
             No vault configured yet. Complete the onboarding flow to set up your
             Identity Vault.
           </p>
           <a
             href="/onboarding"
-            className="inline-block px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm transition-colors"
+            className="inline-block px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm transition-colors"
           >
             Start Onboarding
           </a>
@@ -103,7 +103,7 @@ export default function VaultPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Identity Vault</h1>
-          <p className="text-sm text-slate-400 mt-1">Version {vault.version}</p>
+          <p className="text-sm text-sage-600 mt-1">Version {vault.version}</p>
         </div>
         <div className="flex items-center gap-3">
           <span
@@ -115,13 +115,13 @@ export default function VaultPage() {
           </span>
           <button
             onClick={runAudit}
-            className="px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded-lg text-sm transition-colors"
+            className="px-3 py-1.5 bg-sage-100 hover:bg-sage-200 rounded-lg text-sm transition-colors"
           >
             Run Audit
           </button>
           <button
             onClick={() => setEditing(!editing)}
-            className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm transition-colors"
+            className="px-3 py-1.5 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm transition-colors"
           >
             {editing ? "Cancel" : "Edit"}
           </button>
@@ -131,12 +131,12 @@ export default function VaultPage() {
       {vault.auditResults && (
         <div className="glass rounded-xl p-4 mb-6">
           <h3 className="text-sm font-medium mb-1">Latest Audit</h3>
-          <p className="text-sm text-slate-400">{vault.auditResults}</p>
+          <p className="text-sm text-sage-600">{vault.auditResults}</p>
         </div>
       )}
 
       {error && (
-        <p className="text-red-400 text-sm mb-4">{error}</p>
+        <p className="text-red-600 text-sm mb-4">{error}</p>
       )}
 
       {editing ? (
@@ -145,18 +145,18 @@ export default function VaultPage() {
             value={json}
             onChange={(e) => setJson(e.target.value)}
             rows={30}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+            className="w-full bg-white border border-sage-200 rounded-xl px-4 py-3 text-black font-mono text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-sage-500 resize-none"
           />
           <button
             onClick={handleSave}
             disabled={saving}
-            className="mt-3 px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="mt-3 px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       ) : (
-        <pre className="glass rounded-xl p-4 text-xs font-mono text-slate-300 overflow-auto max-h-[600px]">
+        <pre className="glass rounded-xl p-4 text-xs font-mono text-sage-700 overflow-auto max-h-[600px]">
           {JSON.stringify(vault.vaultData, null, 2)}
         </pre>
       )}

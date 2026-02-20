@@ -65,7 +65,7 @@ export default function DraftEditorPage() {
 
   if (!draft) {
     return (
-      <div className="text-slate-400">Loading...</div>
+      <div className="text-sage-600">Loading...</div>
     );
   }
 
@@ -73,20 +73,20 @@ export default function DraftEditorPage() {
     <div>
       <button
         onClick={() => router.back()}
-        className="text-sm text-slate-400 hover:text-white mb-4 transition-colors"
+        className="text-sm text-sage-600 hover:text-black mb-4 transition-colors"
       >
         &larr; Back to drafts
       </button>
 
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-2xl font-bold">Edit Draft</h1>
-        <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-slate-400 capitalize">
+        <span className="text-xs px-2 py-1 rounded-full bg-sage-100 text-sage-600 capitalize">
           {draft.lengthType}
         </span>
         {draft.score !== null && (
           <span
             className={`text-sm font-mono ${
-              draft.score >= 70 ? "text-green-400" : "text-red-400"
+              draft.score >= 70 ? "text-green-600" : "text-red-600"
             }`}
           >
             Score: {draft.score}/100
@@ -94,7 +94,7 @@ export default function DraftEditorPage() {
         )}
       </div>
 
-      <p className="text-sm text-slate-400 mb-6">
+      <p className="text-sm text-sage-600 mb-6">
         {draft.spark.pipelineItem.project.name} &middot; &ldquo;
         {draft.spark.sparkText}&rdquo;
       </p>
@@ -106,24 +106,24 @@ export default function DraftEditorPage() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={20}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+            className="w-full bg-white border border-sage-200 rounded-xl px-4 py-3 text-black text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-sage-500 resize-none"
           />
           <div className="flex justify-between items-center mt-3">
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-sage-500">
               {content.length} characters
             </span>
             <div className="flex gap-2">
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-sage-100 hover:bg-sage-200 rounded-lg text-sm transition-colors disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save"}
               </button>
               {draft.status === "draft" && (
                 <button
                   onClick={handlePublish}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   Publish to LinkedIn
                 </button>
@@ -144,11 +144,11 @@ export default function DraftEditorPage() {
                     key={slide.id}
                     className="glass rounded-lg p-4"
                   >
-                    <span className="text-xs text-brand-400 font-mono">
+                    <span className="text-xs text-sage-600 font-mono">
                       Slide {slide.slideNumber}
                     </span>
                     <h3 className="font-bold mt-1">{slide.headline}</h3>
-                    <p className="text-sm text-slate-400 mt-1">
+                    <p className="text-sm text-sage-700 mt-1">
                       {slide.content}
                     </p>
                   </div>

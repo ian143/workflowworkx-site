@@ -126,17 +126,17 @@ export default function ProjectsPage() {
   }
 
   const statusLabels: Record<string, { text: string; className: string }> = {
-    linking: { text: "Linking", className: "text-yellow-400 bg-yellow-400/10" },
-    processing: { text: "Processing", className: "text-blue-400 bg-blue-400/10" },
-    ready: { text: "Ready", className: "text-green-400 bg-green-400/10" },
-    archived: { text: "Archived", className: "text-slate-400 bg-slate-400/10" },
+    linking: { text: "Linking", className: "text-yellow-700 bg-yellow-50" },
+    processing: { text: "Processing", className: "text-blue-700 bg-blue-50" },
+    ready: { text: "Ready", className: "text-green-700 bg-green-50" },
+    archived: { text: "Archived", className: "text-sage-700 bg-sage-100" },
   };
 
   if (loading) {
     return (
       <div>
         <h1 className="text-2xl font-bold mb-8">Projects</h1>
-        <div className="glass rounded-xl p-12 text-center text-slate-400">
+        <div className="glass rounded-xl p-12 text-center text-sage-600">
           Scanning your watch folder...
         </div>
       </div>
@@ -148,13 +148,13 @@ export default function ProjectsPage() {
       <div>
         <h1 className="text-2xl font-bold mb-8">Projects</h1>
         <div className="glass rounded-xl p-12 text-center">
-          <p className="text-slate-400 mb-4">
+          <p className="text-sage-600 mb-4">
             No watch folder configured yet. Set a root folder in Settings and
             each subfolder will automatically appear here as a project.
           </p>
           <a
             href="/dashboard/settings"
-            className="inline-block px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors"
+            className="inline-block px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm font-medium transition-colors"
           >
             Go to Settings
           </a>
@@ -170,14 +170,14 @@ export default function ProjectsPage() {
         <button
           onClick={syncFolders}
           disabled={syncing}
-          className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-sage-100 hover:bg-sage-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
         >
           {syncing ? "Syncing..." : "Sync Folders"}
         </button>
       </div>
 
       {discoveredFolders.length === 0 ? (
-        <div className="glass rounded-xl p-12 text-center text-slate-400">
+        <div className="glass rounded-xl p-12 text-center text-sage-600">
           No folders found in your watch directory. Add some folders to your
           cloud drive and click Sync.
         </div>
@@ -200,14 +200,14 @@ export default function ProjectsPage() {
                 </div>
 
                 {folder.isProject ? (
-                  <span className="text-xs text-slate-500 bg-white/5 px-2 py-1 rounded-full">
+                  <span className="text-xs text-sage-500 bg-sage-50 px-2 py-1 rounded-full">
                     Already added
                   </span>
                 ) : (
                   <button
                     onClick={() => createProject(folder)}
                     disabled={creatingId !== null}
-                    className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                    className="px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                   >
                     {creatingId === folder.id ? "Creating..." : "Add Project"}
                   </button>
@@ -216,13 +216,13 @@ export default function ProjectsPage() {
 
               {folder.isProject && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">
+                  <span className="text-sm text-sage-600">
                     {folder.fileCount} file{folder.fileCount !== 1 ? "s" : ""}
                   </span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleBrowseFolder(folder.projectId!)}
-                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors"
+                      className="px-3 py-1.5 bg-sage-50 hover:bg-sage-100 rounded-lg text-sm transition-colors"
                     >
                       Browse Files
                     </button>
@@ -234,7 +234,7 @@ export default function ProjectsPage() {
                         await syncFolders();
                       }}
                       disabled={folder.fileCount === 0}
-                      className="px-3 py-1.5 bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 rounded-lg text-sm transition-colors disabled:opacity-30"
+                      className="px-3 py-1.5 bg-sage-100 hover:bg-sage-200 text-sage-700 rounded-lg text-sm transition-colors disabled:opacity-30"
                     >
                       Run Scout
                     </button>
@@ -244,11 +244,11 @@ export default function ProjectsPage() {
 
               {/* Browse files panel */}
               {folder.projectId && browsingProjectId === folder.projectId && (
-                <div className="mt-4 p-4 bg-white/5 rounded-lg">
+                <div className="mt-4 p-4 bg-sage-50 rounded-lg">
                   {browsing ? (
-                    <p className="text-sm text-slate-400">Loading files...</p>
+                    <p className="text-sm text-sage-600">Loading files...</p>
                   ) : cloudFiles.length === 0 ? (
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-sage-600">
                       No files found in this folder.
                     </p>
                   ) : (
@@ -257,18 +257,18 @@ export default function ProjectsPage() {
                         {cloudFiles.map((file) => (
                           <label
                             key={file.id}
-                            className="flex items-center gap-3 p-2 hover:bg-white/5 rounded cursor-pointer"
+                            className="flex items-center gap-3 p-2 hover:bg-sage-100 rounded cursor-pointer"
                           >
                             <input
                               type="checkbox"
                               checked={selectedFileIds.has(file.id)}
                               onChange={() => toggleFile(file.id)}
-                              className="rounded border-white/20"
+                              className="rounded border-sage-300"
                             />
                             <span className="text-sm flex-1 truncate">
                               {file.name}
                             </span>
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-sage-500">
                               {formatSize(file.size)}
                             </span>
                           </label>
@@ -278,7 +278,7 @@ export default function ProjectsPage() {
                         <button
                           onClick={() => handleSelectFiles(folder.projectId!)}
                           disabled={selectedFileIds.size === 0 || selectingSaving}
-                          className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm transition-colors disabled:opacity-50"
+                          className="px-3 py-1.5 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm transition-colors disabled:opacity-50"
                         >
                           {selectingSaving
                             ? "Saving..."
@@ -286,7 +286,7 @@ export default function ProjectsPage() {
                         </button>
                         <button
                           onClick={() => setBrowsingProjectId(null)}
-                          className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors"
+                          className="px-3 py-1.5 bg-sage-50 hover:bg-sage-100 rounded-lg text-sm transition-colors"
                         >
                           Cancel
                         </button>

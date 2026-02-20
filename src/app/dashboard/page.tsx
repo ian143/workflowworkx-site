@@ -46,25 +46,25 @@ export default function DashboardPage() {
       label: "Active Projects",
       value: stats?.projects ?? "-",
       href: "/dashboard/projects",
-      color: "text-blue-400",
+      color: "text-blue-600",
     },
     {
       label: "Pipeline Items",
       value: stats?.pipelineItems ?? "-",
       href: "/dashboard/pipeline",
-      color: "text-purple-400",
+      color: "text-purple-600",
     },
     {
       label: "Pending Sparks",
       value: stats?.pendingSparks ?? "-",
       href: "/dashboard/sparks",
-      color: "text-amber-400",
+      color: "text-amber-600",
     },
     {
       label: "Ready Drafts",
       value: stats?.readyDrafts ?? "-",
       href: "/dashboard/drafts",
-      color: "text-green-400",
+      color: "text-green-600",
     },
   ];
 
@@ -79,7 +79,7 @@ export default function DashboardPage() {
             href={card.href}
             className="glass rounded-xl p-5 glass-hover"
           >
-            <p className="text-sm text-slate-400 mb-1">{card.label}</p>
+            <p className="text-sm text-sage-600 mb-1">{card.label}</p>
             <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
           </Link>
         ))}
@@ -90,19 +90,19 @@ export default function DashboardPage() {
         <div className="grid md:grid-cols-3 gap-3">
           <Link
             href="/dashboard/projects"
-            className="px-4 py-3 bg-brand-600/20 hover:bg-brand-600/30 rounded-lg text-sm text-brand-300 transition-colors text-center"
+            className="px-4 py-3 bg-sage-100 hover:bg-sage-200 rounded-lg text-sm text-sage-700 transition-colors text-center"
           >
             Upload New Project
           </Link>
           <Link
             href="/dashboard/sparks"
-            className="px-4 py-3 bg-amber-600/20 hover:bg-amber-600/30 rounded-lg text-sm text-amber-300 transition-colors text-center"
+            className="px-4 py-3 bg-amber-50 hover:bg-amber-100 rounded-lg text-sm text-amber-700 transition-colors text-center"
           >
             Review Sparks
           </Link>
           <Link
             href="/dashboard/publish"
-            className="px-4 py-3 bg-green-600/20 hover:bg-green-600/30 rounded-lg text-sm text-green-300 transition-colors text-center"
+            className="px-4 py-3 bg-green-50 hover:bg-green-100 rounded-lg text-sm text-green-700 transition-colors text-center"
           >
             Publishing Queue
           </Link>
