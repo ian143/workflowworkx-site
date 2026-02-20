@@ -49,9 +49,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(
       new URL("/dashboard/settings?cloud=onedrive_connected", req.url)
     );
-  } catch {
+  } catch (err) {
+    console.error("OneDrive OAuth callback failed:", err);
+    const reason = err instanceof Error ? err.message : "unknown_error";
+    const encoded = encodeURIComponent(reason);
     return NextResponse.redirect(
-      new URL("/dashboard/settings?error=onedrive_auth_failed", req.url)
+      new URL(`/dashboard/settings?error=onedrive_auth_failed&reason=${encoded}`, req.url)
     );
   }
 }
