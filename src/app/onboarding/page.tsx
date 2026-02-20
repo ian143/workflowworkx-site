@@ -1,535 +1,659 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
-interface VaultDraft {
-  voice_dna: {
-    tone_archetype: string;
-    signature_phrases: string[];
-    banned_words: string[];
-    emoji_usage: "none" | "minimal" | "average" | "frequent";
-    ai_slop_triggers: string[];
-  };
-  historical_wins: Array<{
-    project_name: string;
-    data_bomb: string;
-    secret_math: string;
-  }>;
-  icp: {
-    core_pain_point: string;
-    decision_maker: string;
-  };
-  verbatim_language: string[];
-  content_strategy: {
-    preferred_post_length: string;
-    length_in_characters: { short: number; medium: number; long: number };
-    format_preferences: {
-      willing_to_create: string[];
-      primary_format: string;
-    };
-    posting_frequency: string;
-  };
-  industry_context: {
-    primary_industry: string;
-    writing_guidelines: {
-      appropriate_jargon: string[];
-      appropriate_metrics: string[];
-    };
-  };
+// ============================================================
+// TYPES
+// ============================================================
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
 }
 
-const STEPS = [
+type InterviewState = "welcome" | "interviewing" | "saving" | "error";
+
+const SECTIONS = [
+  "Business",
   "Voice DNA",
-  "Historical Wins",
-  "ICP & Language",
-  "Content Strategy",
-  "Industry & Review",
+  "Wins",
+  "ICP",
+  "Strategy",
 ] as const;
 
-const emptyVault: VaultDraft = {
-  voice_dna: {
-    tone_archetype: "",
-    signature_phrases: ["", "", ""],
-    banned_words: ["", "", "", "", ""],
-    emoji_usage: "minimal",
-    ai_slop_triggers: ["", "", ""],
-  },
-  historical_wins: [
-    { project_name: "", data_bomb: "", secret_math: "" },
-    { project_name: "", data_bomb: "", secret_math: "" },
-    { project_name: "", data_bomb: "", secret_math: "" },
-  ],
-  icp: { core_pain_point: "", decision_maker: "" },
-  verbatim_language: ["", "", ""],
-  content_strategy: {
-    preferred_post_length: "medium_1300_1600",
-    length_in_characters: { short: 700, medium: 1500, long: 2200 },
-    format_preferences: {
-      willing_to_create: ["text", "carousel"],
-      primary_format: "mixed",
-    },
-    posting_frequency: "2_5_per_week",
-  },
-  industry_context: {
-    primary_industry: "",
-    writing_guidelines: {
-      appropriate_jargon: ["", "", ""],
-      appropriate_metrics: ["", ""],
-    },
-  },
-};
+// ============================================================
+// SECTION DETECTION (progress indicator)
+// ============================================================
+
+function detectSection(messages: Message[]): number {
+  const assistantMessages = messages
+    .filter((m) => m.role === "assistant")
+    .map((m) => m.content.toLowerCase());
+
+  const recent = assistantMessages.slice(-4).join(" ");
+  const all = assistantMessages.join(" ");
+
+  if (recent.includes("brand vault is ready") || recent.includes("```json"))
+    return 5;
+  if (
+    recent.includes("post length") ||
+    recent.includes("carousel") ||
+    recent.includes("how often") ||
+    recent.includes("posting frequency") ||
+    recent.includes("format")
+  )
+    return 4;
+  if (
+    recent.includes("ideal client") ||
+    recent.includes("verbatim") ||
+    recent.includes("exact words your client")
+  )
+    return 3;
+  if (
+    all.includes("secret math") ||
+    all.includes("data bomb") ||
+    all.includes("backstage") ||
+    all.includes("friction point") ||
+    recent.includes("best project") ||
+    recent.includes("best work")
+  )
+    return 2;
+  if (
+    all.includes("signature phrase") ||
+    all.includes("writing style") ||
+    all.includes("emoji") ||
+    all.includes("banned word") ||
+    recent.includes("tone")
+  )
+    return 1;
+  return 0;
+}
+
+// ============================================================
+// JSON EXTRACTION
+// ============================================================
+
+function extractVaultJSON(text: string): Record<string, unknown> | null {
+  // Look for ```json ... ``` code fence
+  const jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
+  if (jsonMatch) {
+    try {
+      return JSON.parse(jsonMatch[1].trim());
+    } catch {
+      return null;
+    }
+  }
+
+  // Fallback: look for a raw JSON object starting with {
+  const braceStart = text.indexOf("{");
+  const braceEnd = text.lastIndexOf("}");
+  if (braceStart !== -1 && braceEnd > braceStart) {
+    try {
+      return JSON.parse(text.slice(braceStart, braceEnd + 1));
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+// ============================================================
+// COMPONENT
+// ============================================================
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
-  const [vault, setVault] = useState<VaultDraft>(emptyVault);
-  const [saving, setSaving] = useState(false);
+  const [state, setState] = useState<InterviewState>("welcome");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingText, setStreamingText] = useState("");
+  const [extractedVault, setExtractedVault] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function updateVoiceDna(field: string, value: unknown) {
-    setVault((v) => ({
-      ...v,
-      voice_dna: { ...v.voice_dna, [field]: value },
-    }));
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const currentSection = detectSection(messages);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, streamingText]);
+
+  // Focus input when not streaming
+  useEffect(() => {
+    if (!isStreaming && state === "interviewing") {
+      inputRef.current?.focus();
+    }
+  }, [isStreaming, state]);
+
+  // ----------------------------------------------------------
+  // STREAMING CHAT
+  // ----------------------------------------------------------
+
+  const sendMessages = useCallback(
+    async (messagesToSend: Message[]) => {
+      setIsStreaming(true);
+      setStreamingText("");
+      setError("");
+
+      try {
+        const res = await fetch("/api/vault/interview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: messagesToSend }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `Request failed (${res.status})`);
+        }
+
+        const reader = res.body?.getReader();
+        if (!reader) throw new Error("No response stream");
+
+        const decoder = new TextDecoder();
+        let accumulated = "";
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          // Keep the last potentially incomplete line in the buffer
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+            const data = trimmed.slice(6);
+            if (data === "[DONE]") continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.text) {
+                accumulated += parsed.text;
+                setStreamingText(accumulated);
+              }
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+            } catch (e) {
+              // Skip malformed SSE lines (not JSON parse errors from the API)
+              if (e instanceof SyntaxError) continue;
+              throw e;
+            }
+          }
+        }
+
+        // Finalize: add the complete assistant message
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: accumulated,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+        setStreamingText("");
+
+        // Check for vault JSON in the response
+        const vault = extractVaultJSON(accumulated);
+        if (vault) {
+          setExtractedVault(vault);
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message);
+      } finally {
+        setIsStreaming(false);
+      }
+    },
+    []
+  );
+
+  // ----------------------------------------------------------
+  // START INTERVIEW
+  // ----------------------------------------------------------
+
+  function startInterview() {
+    setState("interviewing");
+    const trigger: Message = {
+      role: "user",
+      content: "I'm ready to build my Brand Vault. Let's begin.",
+    };
+    setMessages([trigger]);
+    sendMessages([trigger]);
   }
 
-  function updateWin(index: number, field: string, value: string) {
-    setVault((v) => {
-      const wins = [...v.historical_wins];
-      wins[index] = { ...wins[index], [field]: value };
-      return { ...v, historical_wins: wins };
-    });
+  // ----------------------------------------------------------
+  // SEND USER MESSAGE
+  // ----------------------------------------------------------
+
+  function handleSend() {
+    const text = input.trim();
+    if (!text || isStreaming) return;
+
+    const userMessage: Message = { role: "user", content: text };
+    const updated = [...messages, userMessage];
+    setMessages(updated);
+    setInput("");
+    sendMessages(updated);
   }
 
-  async function handleSubmit() {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
+  // ----------------------------------------------------------
+  // SAVE VAULT
+  // ----------------------------------------------------------
+
+  async function handleSaveVault() {
+    if (!extractedVault) return;
+
     setSaving(true);
     setError("");
 
-    // Filter out empty strings from arrays
-    const cleanedVault = {
-      ...vault,
-      voice_dna: {
-        ...vault.voice_dna,
-        signature_phrases: vault.voice_dna.signature_phrases.filter(Boolean),
-        banned_words: vault.voice_dna.banned_words.filter(Boolean),
-        ai_slop_triggers: vault.voice_dna.ai_slop_triggers.filter(Boolean),
-      },
-      verbatim_language: vault.verbatim_language.filter(Boolean),
-      industry_context: {
-        ...vault.industry_context,
-        writing_guidelines: {
-          appropriate_jargon:
-            vault.industry_context.writing_guidelines.appropriate_jargon.filter(
-              Boolean
-            ),
-          appropriate_metrics:
-            vault.industry_context.writing_guidelines.appropriate_metrics.filter(
-              Boolean
-            ),
-        },
-      },
-    };
+    try {
+      const res = await fetch("/api/vault", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(extractedVault),
+      });
 
-    const res = await fetch("/api/vault", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cleanedVault),
-    });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save vault");
+      }
 
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || "Failed to save vault");
+      // Run audit
+      await fetch("/api/vault/audit", { method: "POST" });
+
+      setState("saving");
+      // Brief pause to show success, then redirect
+      setTimeout(() => router.push("/dashboard"), 1500);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
       setSaving(false);
-      return;
     }
-
-    // Run audit
-    await fetch("/api/vault/audit", { method: "POST" });
-
-    router.push("/dashboard");
   }
 
-  return (
-    <div className="min-h-screen py-12 px-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-serif font-bold mb-2">
-          Build Your Identity Vault
-        </h1>
-        <p className="text-slate-400 mb-8">
-          This powers your content engine. The more specific you are, the better
-          your output.
-        </p>
+  // ----------------------------------------------------------
+  // RENDER: WELCOME SCREEN
+  // ----------------------------------------------------------
 
-        {/* Step indicator */}
-        <div className="flex gap-2 mb-8">
-          {STEPS.map((label, i) => (
-            <button
-              key={label}
-              onClick={() => setStep(i)}
-              className={`flex-1 text-xs py-2 rounded-lg transition-colors ${
-                i === step
-                  ? "bg-brand-600 text-white"
-                  : i < step
-                  ? "bg-brand-600/20 text-brand-300"
-                  : "bg-white/5 text-slate-500"
-              }`}
+  if (state === "welcome") {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="max-w-lg text-center">
+          <div className="w-16 h-16 rounded-2xl bg-brand-600/20 border border-brand-500/30 flex items-center justify-center mx-auto mb-6">
+            <svg
+              className="w-8 h-8 text-brand-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
             >
-              {label}
-            </button>
-          ))}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"
+              />
+            </svg>
+          </div>
+
+          <h1 className="text-3xl font-serif font-bold mb-3">
+            Build Your Identity Vault
+          </h1>
+          <p className="text-slate-400 mb-2 text-lg">
+            A 20-minute conversation that captures everything.
+          </p>
+          <p className="text-slate-500 text-sm mb-8 max-w-md mx-auto">
+            Instead of filling out forms, you&apos;ll have a strategic
+            conversation with our Brand Vault Architect. It will ask smart
+            questions, probe for specifics, and compile your unique voice,
+            methodology, and positioning into a structured vault that powers all
+            your content.
+          </p>
+
+          <div className="grid grid-cols-5 gap-2 mb-8 max-w-md mx-auto">
+            {SECTIONS.map((label) => (
+              <div
+                key={label}
+                className="text-xs py-2 px-1 rounded-lg bg-white/5 text-slate-500 text-center"
+              >
+                {label}
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={startInterview}
+            className="px-8 py-3 bg-brand-600 hover:bg-brand-500 rounded-xl text-base font-medium transition-colors"
+          >
+            Start Interview
+          </button>
         </div>
+      </div>
+    );
+  }
 
-        <div className="glass rounded-xl p-6">
-          {/* Step 0: Voice DNA */}
-          {step === 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold">Voice DNA</h2>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Tone Archetype
-                </label>
-                <input
-                  type="text"
-                  value={vault.voice_dna.tone_archetype}
-                  onChange={(e) =>
-                    updateVoiceDna("tone_archetype", e.target.value)
-                  }
-                  placeholder="e.g. Strategic Pragmatist, Calm Authority"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Signature Phrases (min 3)
-                </label>
-                {vault.voice_dna.signature_phrases.map((p, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    value={p}
-                    onChange={(e) => {
-                      const arr = [...vault.voice_dna.signature_phrases];
-                      arr[i] = e.target.value;
-                      updateVoiceDna("signature_phrases", arr);
-                    }}
-                    placeholder={`Phrase ${i + 1}`}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white mb-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                ))}
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Banned Words (min 5)
-                </label>
-                {vault.voice_dna.banned_words.map((w, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    value={w}
-                    onChange={(e) => {
-                      const arr = [...vault.voice_dna.banned_words];
-                      arr[i] = e.target.value;
-                      updateVoiceDna("banned_words", arr);
-                    }}
-                    placeholder={`Word ${i + 1}`}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white mb-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                ))}
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Emoji Usage
-                </label>
-                <select
-                  value={vault.voice_dna.emoji_usage}
-                  onChange={(e) =>
-                    updateVoiceDna("emoji_usage", e.target.value)
-                  }
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="none" className="text-black bg-white">None</option>
-                  <option value="minimal" className="text-black bg-white">Minimal</option>
-                  <option value="average" className="text-black bg-white">Average</option>
-                  <option value="frequent" className="text-black bg-white">Frequent</option>
-                </select>
-              </div>
-            </div>
-          )}
+  // ----------------------------------------------------------
+  // RENDER: SAVING SUCCESS
+  // ----------------------------------------------------------
 
-          {/* Step 1: Historical Wins */}
-          {step === 1 && (
-            <div className="space-y-6">
-              <h2 className="text-lg font-bold">Historical Wins (min 3)</h2>
-              <p className="text-sm text-slate-400">
-                Each win needs a project name, a Data Bomb (specific metric),
-                and Secret Math (why it worked).
-              </p>
-              {vault.historical_wins.map((win, i) => (
-                <div key={i} className="space-y-2 p-4 bg-white/5 rounded-lg">
-                  <h3 className="text-sm font-medium text-brand-300">
-                    Win {i + 1}
-                  </h3>
-                  <input
-                    type="text"
-                    value={win.project_name}
-                    onChange={(e) => updateWin(i, "project_name", e.target.value)}
-                    placeholder="Project name"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                  <input
-                    type="text"
-                    value={win.data_bomb}
-                    onChange={(e) => updateWin(i, "data_bomb", e.target.value)}
-                    placeholder="Data Bomb — e.g. 42% cost reduction in 6 months"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                  <textarea
-                    value={win.secret_math}
-                    onChange={(e) => updateWin(i, "secret_math", e.target.value)}
-                    placeholder="Secret Math — the mechanism that made it work (min 50 chars)"
-                    rows={3}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Step 2: ICP & Verbatim Language */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold">
-                Ideal Client Profile & Language
-              </h2>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Core Pain Point
-                </label>
-                <textarea
-                  value={vault.icp.core_pain_point}
-                  onChange={(e) =>
-                    setVault((v) => ({
-                      ...v,
-                      icp: { ...v.icp, core_pain_point: e.target.value },
-                    }))
-                  }
-                  placeholder="What problem does your ideal client struggle with most?"
-                  rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Decision Maker Title
-                </label>
-                <input
-                  type="text"
-                  value={vault.icp.decision_maker}
-                  onChange={(e) =>
-                    setVault((v) => ({
-                      ...v,
-                      icp: { ...v.icp, decision_maker: e.target.value },
-                    }))
-                  }
-                  placeholder="e.g. Head of Operations, CFO, Procurement Director"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Verbatim Client Language (min 3 quotes)
-                </label>
-                {vault.verbatim_language.map((q, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    value={q}
-                    onChange={(e) => {
-                      const arr = [...vault.verbatim_language];
-                      arr[i] = e.target.value;
-                      setVault((v) => ({ ...v, verbatim_language: arr }));
-                    }}
-                    placeholder={`Quote ${i + 1} — things your clients actually say`}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white mb-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Content Strategy */}
-          {step === 3 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold">Content Strategy</h2>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Preferred Post Length
-                </label>
-                <select
-                  value={vault.content_strategy.preferred_post_length}
-                  onChange={(e) =>
-                    setVault((v) => ({
-                      ...v,
-                      content_strategy: {
-                        ...v.content_strategy,
-                        preferred_post_length: e.target.value,
-                      },
-                    }))
-                  }
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="short_500_800" className="text-black bg-white">Short (500-800 chars)</option>
-                  <option value="medium_1300_1600" className="text-black bg-white">
-                    Medium (1300-1600 chars)
-                  </option>
-                  <option value="long_1800_2500" className="text-black bg-white">Long (1800-2500 chars)</option>
-                  <option value="flexible" className="text-black bg-white">Flexible</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Posting Frequency
-                </label>
-                <select
-                  value={vault.content_strategy.posting_frequency}
-                  onChange={(e) =>
-                    setVault((v) => ({
-                      ...v,
-                      content_strategy: {
-                        ...v.content_strategy,
-                        posting_frequency: e.target.value,
-                      },
-                    }))
-                  }
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="1_per_week" className="text-black bg-white">1 per week</option>
-                  <option value="2_5_per_week" className="text-black bg-white">2-5 per week</option>
-                  <option value="daily" className="text-black bg-white">Daily</option>
-                  <option value="sporadic" className="text-black bg-white">Sporadic</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Primary Format
-                </label>
-                <select
-                  value={
-                    vault.content_strategy.format_preferences.primary_format
-                  }
-                  onChange={(e) =>
-                    setVault((v) => ({
-                      ...v,
-                      content_strategy: {
-                        ...v.content_strategy,
-                        format_preferences: {
-                          ...v.content_strategy.format_preferences,
-                          primary_format: e.target.value,
-                        },
-                      },
-                    }))
-                  }
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="mixed" className="text-black bg-white">Mixed (text + carousel)</option>
-                  <option value="text_only" className="text-black bg-white">Text Only</option>
-                  <option value="carousel_focused" className="text-black bg-white">Carousel Focused</option>
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Industry & Review */}
-          {step === 4 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold">Industry Context</h2>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Primary Industry
-                </label>
-                <input
-                  type="text"
-                  value={vault.industry_context.primary_industry}
-                  onChange={(e) =>
-                    setVault((v) => ({
-                      ...v,
-                      industry_context: {
-                        ...v.industry_context,
-                        primary_industry: e.target.value,
-                      },
-                    }))
-                  }
-                  placeholder="e.g. SaaS, Construction, Professional Services"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">
-                  Appropriate Jargon (min 3)
-                </label>
-                {vault.industry_context.writing_guidelines.appropriate_jargon.map(
-                  (j, i) => (
-                    <input
-                      key={i}
-                      type="text"
-                      value={j}
-                      onChange={(e) => {
-                        const arr = [
-                          ...vault.industry_context.writing_guidelines
-                            .appropriate_jargon,
-                        ];
-                        arr[i] = e.target.value;
-                        setVault((v) => ({
-                          ...v,
-                          industry_context: {
-                            ...v.industry_context,
-                            writing_guidelines: {
-                              ...v.industry_context.writing_guidelines,
-                              appropriate_jargon: arr,
-                            },
-                          },
-                        }));
-                      }}
-                      placeholder={`Term ${i + 1}`}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white mb-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    />
-                  )
-                )}
-              </div>
-
-              {error && <p className="text-red-400 text-sm">{error}</p>}
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div className="flex justify-between mt-8">
-            <button
-              onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0}
-              className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+  if (state === "saving") {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-green-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
             >
-              Back
-            </button>
-            {step < STEPS.length - 1 ? (
-              <button
-                onClick={() => setStep((s) => s + 1)}
-                className="px-6 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors"
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={saving}
-                className="px-6 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {saving ? "Saving..." : "Save & Continue"}
-              </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.5 12.75l6 6 9-13.5"
+              />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-serif font-bold mb-2">
+            Vault Saved & Audited
+          </h2>
+          <p className="text-slate-400">
+            Redirecting to your dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ----------------------------------------------------------
+  // RENDER: CHAT INTERVIEW
+  // ----------------------------------------------------------
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Progress bar */}
+      <div className="border-b border-white/10 bg-slate-950/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto px-4 py-3">
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-sm font-medium text-slate-300">
+              Brand Vault Interview
+            </h1>
+            {currentSection < 5 && (
+              <span className="text-xs text-slate-500">
+                Section {currentSection + 1} of 5
+              </span>
             )}
+            {currentSection === 5 && (
+              <span className="text-xs text-green-400 font-medium">
+                Complete
+              </span>
+            )}
+          </div>
+          <div className="flex gap-1.5">
+            {SECTIONS.map((label, i) => (
+              <div key={label} className="flex-1">
+                <div
+                  className={`h-1.5 rounded-full transition-all duration-500 ${
+                    i < currentSection
+                      ? "bg-brand-500"
+                      : i === currentSection
+                      ? "bg-brand-600 animate-pulse"
+                      : "bg-white/10"
+                  }`}
+                />
+                <p
+                  className={`text-[10px] mt-1 text-center transition-colors ${
+                    i <= currentSection ? "text-brand-300" : "text-slate-600"
+                  }`}
+                >
+                  {label}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+
+      {/* Chat messages */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex ${
+                msg.role === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-brand-600 text-white rounded-br-md"
+                    : "glass text-slate-200 rounded-bl-md"
+                }`}
+              >
+                <MessageContent content={msg.content} />
+              </div>
+            </div>
+          ))}
+
+          {/* Streaming indicator */}
+          {isStreaming && (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md glass px-4 py-3 text-sm leading-relaxed text-slate-200">
+                {streamingText ? (
+                  <MessageContent content={streamingText} />
+                ) : (
+                  <TypingIndicator />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Vault extracted — Save button */}
+          {extractedVault && !saving && (
+            <div className="flex justify-center py-4">
+              <div className="glass rounded-xl p-6 text-center max-w-sm">
+                <div className="w-10 h-10 rounded-full bg-brand-600/20 border border-brand-500/30 flex items-center justify-center mx-auto mb-3">
+                  <svg
+                    className="w-5 h-5 text-brand-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-sm text-slate-300 mb-4">
+                  Your Brand Vault has been compiled. Save it to power your
+                  content engine.
+                </p>
+                <button
+                  onClick={handleSaveVault}
+                  disabled={saving}
+                  className="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 w-full"
+                >
+                  {saving ? "Saving..." : "Save & Continue to Dashboard"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Error display */}
+          {error && (
+            <div className="flex justify-center">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-300 max-w-sm">
+                {error}
+              </div>
+            </div>
+          )}
+
+          <div ref={chatEndRef} />
+        </div>
+      </div>
+
+      {/* Input area */}
+      {!extractedVault && (
+        <div className="border-t border-white/10 bg-slate-950/80 backdrop-blur-sm sticky bottom-0">
+          <div className="max-w-3xl mx-auto px-4 py-3">
+            <div className="flex gap-2 items-end">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isStreaming}
+                placeholder={
+                  isStreaming ? "Waiting for response..." : "Type your answer..."
+                }
+                rows={1}
+                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent disabled:opacity-50 min-h-[42px] max-h-[120px]"
+                style={{
+                  height: "auto",
+                  overflow: "hidden",
+                }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = "auto";
+                  target.style.height =
+                    Math.min(target.scrollHeight, 120) + "px";
+                }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={isStreaming || !input.trim()}
+                className="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 rounded-xl text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+                  />
+                </svg>
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-600 mt-1.5 text-center">
+              Press Enter to send, Shift+Enter for new line
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// SUB-COMPONENTS
+// ============================================================
+
+function MessageContent({ content }: { content: string }) {
+  // Render markdown-lite: bold, line breaks, code blocks
+  const parts = content.split(/(```json[\s\S]*?```|```[\s\S]*?```)/g);
+
+  return (
+    <div className="space-y-2">
+      {parts.map((part, i) => {
+        // Code block
+        if (part.startsWith("```")) {
+          const code = part.replace(/```json?\n?/g, "").replace(/```$/g, "");
+          return (
+            <pre
+              key={i}
+              className="bg-black/30 rounded-lg p-3 text-xs overflow-x-auto font-mono text-slate-300 border border-white/5"
+            >
+              {code.trim()}
+            </pre>
+          );
+        }
+
+        // Regular text with basic markdown
+        return (
+          <div key={i}>
+            {part.split("\n").map((line, j) => {
+              // Process bold markers
+              const processed = line.split(/(\*\*.*?\*\*)/g).map((seg, k) => {
+                if (seg.startsWith("**") && seg.endsWith("**")) {
+                  return (
+                    <strong key={k} className="font-semibold text-white">
+                      {seg.slice(2, -2)}
+                    </strong>
+                  );
+                }
+                return <span key={k}>{seg}</span>;
+              });
+
+              if (!line.trim()) {
+                return <br key={j} />;
+              }
+
+              // Bullet points
+              if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
+                return (
+                  <div key={j} className="flex gap-2 ml-1">
+                    <span className="text-brand-400 shrink-0">&#8226;</span>
+                    <span>{processed}</span>
+                  </div>
+                );
+              }
+
+              // Numbered lists
+              const numMatch = line.trim().match(/^(\d+)[.)]\s/);
+              if (numMatch) {
+                return (
+                  <div key={j} className="flex gap-2 ml-1">
+                    <span className="text-brand-400 shrink-0 tabular-nums">
+                      {numMatch[1]}.
+                    </span>
+                    <span>{processed}</span>
+                  </div>
+                );
+              }
+
+              return <p key={j}>{processed}</p>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TypingIndicator() {
+  return (
+    <div className="flex gap-1.5 items-center py-1">
+      <div className="w-2 h-2 rounded-full bg-brand-400 animate-bounce [animation-delay:0ms]" />
+      <div className="w-2 h-2 rounded-full bg-brand-400 animate-bounce [animation-delay:150ms]" />
+      <div className="w-2 h-2 rounded-full bg-brand-400 animate-bounce [animation-delay:300ms]" />
     </div>
   );
 }

@@ -28,6 +28,7 @@ function SettingsContent() {
   const subscriptionInactive = searchParams.get("subscription") === "inactive";
   const cloudStatus = searchParams.get("cloud");
   const authError = searchParams.get("error");
+  const authErrorReason = searchParams.get("reason");
   const [linkedinConnecting, setLinkedinConnecting] = useState(false);
   const [resubLoading, setResubLoading] = useState<string | null>(null);
   const [cloudConnections, setCloudConnections] = useState<CloudConnection[]>([]);
@@ -50,13 +51,14 @@ function SettingsContent() {
     } else if (cloudStatus === "onedrive_connected") {
       setStatusMessage({ type: "success", text: "OneDrive connected successfully!" });
     } else if (authError === "google_auth_failed") {
-      setStatusMessage({ type: "error", text: "Google Drive connection failed. Please try again." });
+      const detail = authErrorReason ? ` (${authErrorReason})` : "";
+      setStatusMessage({ type: "error", text: `Google Drive connection failed.${detail}` });
     } else if (authError === "no_code") {
       setStatusMessage({ type: "error", text: "Google Drive authorization was cancelled." });
     } else if (authError) {
       setStatusMessage({ type: "error", text: `Connection failed: ${authError}` });
     }
-  }, [cloudStatus, authError]);
+  }, [cloudStatus, authError, authErrorReason]);
 
   useEffect(() => {
     fetch("/api/cloud-connections")

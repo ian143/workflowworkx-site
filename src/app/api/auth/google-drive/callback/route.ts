@@ -53,8 +53,10 @@ export async function GET(req: NextRequest) {
     );
   } catch (err) {
     console.error("Google Drive OAuth callback failed:", err);
+    const reason = err instanceof Error ? err.message : "unknown_error";
+    const encoded = encodeURIComponent(reason);
     return NextResponse.redirect(
-      new URL("/dashboard/settings?error=google_auth_failed", req.url)
+      new URL(`/dashboard/settings?error=google_auth_failed&reason=${encoded}`, req.url)
     );
   }
 }
