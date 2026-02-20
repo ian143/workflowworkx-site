@@ -30,6 +30,8 @@ function SettingsContent() {
   const authError = searchParams.get("error");
   const authErrorReason = searchParams.get("reason");
   const [linkedinConnecting, setLinkedinConnecting] = useState(false);
+  const [linkedinConnected, setLinkedinConnected] = useState(false);
+  const linkedinStatus = searchParams.get("linkedin");
   const [resubLoading, setResubLoading] = useState<string | null>(null);
   const [cloudConnections, setCloudConnections] = useState<CloudConnection[]>([]);
   const [cloudConnecting, setCloudConnecting] = useState<string | null>(null);
@@ -46,7 +48,10 @@ function SettingsContent() {
 
   // Show OAuth status messages from redirect
   useEffect(() => {
-    if (cloudStatus === "google_connected") {
+    if (linkedinStatus === "connected") {
+      setStatusMessage({ type: "success", text: "LinkedIn connected successfully!" });
+      setLinkedinConnected(true);
+    } else if (cloudStatus === "google_connected") {
       setStatusMessage({ type: "success", text: "Google Drive connected successfully!" });
     } else if (cloudStatus === "onedrive_connected") {
       setStatusMessage({ type: "success", text: "OneDrive connected successfully!" });
@@ -58,7 +63,7 @@ function SettingsContent() {
     } else if (authError) {
       setStatusMessage({ type: "error", text: `Connection failed: ${authError}` });
     }
-  }, [cloudStatus, authError, authErrorReason]);
+  }, [linkedinStatus, cloudStatus, authError, authErrorReason]);
 
   useEffect(() => {
     fetch("/api/cloud-connections")
@@ -67,6 +72,9 @@ function SettingsContent() {
     fetch("/api/watch-folder")
       .then((r) => (r.ok ? r.json() : null))
       .then(setWatchFolder);
+    fetch("/api/linkedin-status")
+      .then((r) => (r.ok ? r.json() : { connected: false }))
+      .then((data) => setLinkedinConnected(data.connected));
   }, []);
 
   async function loadFolders(provider: string, parentId: string = "root") {
@@ -183,6 +191,11 @@ function SettingsContent() {
       window.location.href = url;
     }
     setLinkedinConnecting(false);
+  }
+
+  async function disconnectLinkedIn() {
+    await fetch("/api/linkedin-status", { method: "DELETE" });
+    setLinkedinConnected(false);
   }
 
   async function handlePasswordChange(e: FormEvent) {
@@ -346,13 +359,28 @@ function SettingsContent() {
         <p className="text-sm text-slate-400 mb-4">
           Connect your LinkedIn account to publish posts directly from GlueOS.
         </p>
-        <button
-          onClick={connectLinkedIn}
-          disabled={linkedinConnecting}
-          className="px-4 py-2 bg-[#0077b5] hover:bg-[#006699] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-        >
-          {linkedinConnecting ? "Connecting..." : "Connect LinkedIn"}
-        </button>
+        {linkedinConnected ? (
+          <div className="flex items-center justify-between bg-white/5 rounded-lg px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-green-400" />
+              <span className="text-sm font-medium">LinkedIn Connected</span>
+            </div>
+            <button
+              onClick={disconnectLinkedIn}
+              className="text-xs text-red-400 hover:text-red-300 transition-colors"
+            >
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={connectLinkedIn}
+            disabled={linkedinConnecting}
+            className="px-4 py-2 bg-[#0077b5] hover:bg-[#006699] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {linkedinConnecting ? "Connecting..." : "Connect LinkedIn"}
+          </button>
+        )}
       </div>
 
       {/* Cloud Drive Connections */}
