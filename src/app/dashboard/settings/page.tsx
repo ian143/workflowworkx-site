@@ -58,8 +58,11 @@ function SettingsContent() {
     } else if (authError === "google_auth_failed") {
       const detail = authErrorReason ? ` (${authErrorReason})` : "";
       setStatusMessage({ type: "error", text: `Google Drive connection failed.${detail}` });
+    } else if (authError === "onedrive_auth_failed") {
+      const detail = authErrorReason ? ` (${authErrorReason})` : "";
+      setStatusMessage({ type: "error", text: `OneDrive connection failed.${detail}` });
     } else if (authError === "no_code") {
-      setStatusMessage({ type: "error", text: "Google Drive authorization was cancelled." });
+      setStatusMessage({ type: "error", text: "Authorization was cancelled." });
     } else if (authError) {
       setStatusMessage({ type: "error", text: `Connection failed: ${authError}` });
     }

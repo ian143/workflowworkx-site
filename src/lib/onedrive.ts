@@ -46,11 +46,13 @@ export async function exchangeOneDriveCode(
     }),
   });
 
+  const data = await response.json();
+
   if (!response.ok) {
-    throw new Error(`OneDrive token exchange failed: ${response.statusText}`);
+    const detail = data.error_description || data.error || response.statusText;
+    throw new Error(`OneDrive token exchange failed: ${detail}`);
   }
 
-  const data = await response.json();
   return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
@@ -72,11 +74,13 @@ export async function refreshOneDriveToken(
     }),
   });
 
+  const data = await response.json();
+
   if (!response.ok) {
-    throw new Error(`OneDrive token refresh failed: ${response.statusText}`);
+    const detail = data.error_description || data.error || response.statusText;
+    throw new Error(`OneDrive token refresh failed: ${detail}`);
   }
 
-  const data = await response.json();
   return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
