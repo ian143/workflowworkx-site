@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
+import Logo from "@/components/Logo";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Overview", icon: "grid" },
@@ -27,8 +28,8 @@ export default function DashboardLayout({
   const navContent = (
     <>
       <div className="p-6">
-        <Link href="/dashboard" className="text-xl font-bold tracking-tight text-black">
-          Glue<span className="text-sage-600">OS</span>
+        <Link href="/dashboard">
+          <Logo size="md" />
         </Link>
       </div>
 
@@ -104,8 +105,8 @@ export default function DashboardLayout({
               <line x1="3" y1="15" x2="17" y2="15" />
             </svg>
           </button>
-          <Link href="/dashboard" className="text-lg font-bold tracking-tight text-black">
-            Glue<span className="text-sage-600">OS</span>
+          <Link href="/dashboard">
+            <Logo size="sm" />
           </Link>
         </div>
 

@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
+import Logo from "@/components/Logo";
 
 function LoginForm() {
   const router = useRouter();
@@ -56,11 +57,8 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-sm">
-      <Link
-        href="/"
-        className="block text-center text-2xl font-bold tracking-tight mb-8 text-black"
-      >
-        Glue<span className="text-sage-600">OS</span>
+      <Link href="/" className="flex justify-center mb-8">
+        <Logo size="lg" />
       </Link>
 
       <div className="glass rounded-xl p-6">
