@@ -32,17 +32,22 @@ export async function GET(
     );
   }
 
-  const accessToken = await getValidAccessToken(
-    session.user.id,
-    project.sourceFolderProvider
-  );
+  try {
+    const accessToken = await getValidAccessToken(
+      session.user.id,
+      project.sourceFolderProvider
+    );
 
-  let files;
-  if (project.sourceFolderProvider === "google_drive") {
-    files = await listGoogleFiles(accessToken, project.sourceFolderId);
-  } else {
-    files = await listOneDriveFiles(accessToken, project.sourceFolderId);
+    let files;
+    if (project.sourceFolderProvider === "google_drive") {
+      files = await listGoogleFiles(accessToken, project.sourceFolderId);
+    } else {
+      files = await listOneDriveFiles(accessToken, project.sourceFolderId);
+    }
+
+    return NextResponse.json({ files });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Failed to list files";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
-
-  return NextResponse.json({ files });
 }
