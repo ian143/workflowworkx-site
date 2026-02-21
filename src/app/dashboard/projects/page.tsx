@@ -24,6 +24,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [noWatchFolder, setNoWatchFolder] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [creatingId, setCreatingId] = useState<string | null>(null);
 
   // File browsing state
@@ -35,16 +36,24 @@ export default function ProjectsPage() {
 
   async function syncFolders() {
     setSyncing(true);
-    const res = await fetch("/api/watch-folder/sync");
-    if (res.ok) {
-      const data = await res.json();
-      setDiscoveredFolders(data.folders);
-      setNoWatchFolder(false);
-    } else {
-      const data = await res.json();
-      if (data.error?.includes("No watch folder")) {
-        setNoWatchFolder(true);
+    setSyncError(null);
+    try {
+      const res = await fetch("/api/watch-folder/sync");
+      if (res.ok) {
+        const data = await res.json();
+        setDiscoveredFolders(data.folders);
+        setNoWatchFolder(false);
+      } else {
+        const data = await res.json().catch(() => ({ error: "Sync failed" }));
+        if (data.error?.includes("No watch folder")) {
+          setNoWatchFolder(true);
+        } else {
+          setSyncError(data.error || "Failed to sync folders. Please try again.");
+        }
+        setDiscoveredFolders([]);
       }
+    } catch {
+      setSyncError("Could not reach the server. Check your connection and try again.");
       setDiscoveredFolders([]);
     }
     setSyncing(false);
@@ -176,7 +185,21 @@ export default function ProjectsPage() {
         </button>
       </div>
 
-      {discoveredFolders.length === 0 ? (
+      {syncError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <p className="text-red-600 text-sm">{syncError}</p>
+            <button
+              onClick={() => setSyncError(null)}
+              className="text-xs text-sage-500 hover:text-sage-700 ml-4"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {discoveredFolders.length === 0 && !syncError ? (
         <div className="glass rounded-xl p-12 text-center text-sage-600">
           No folders found in your watch directory. Add some folders to your
           cloud drive and click Sync.
