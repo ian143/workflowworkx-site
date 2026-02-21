@@ -314,7 +314,7 @@ export default function OnboardingPage() {
             </svg>
           </div>
 
-          <h1 className="text-3xl font-serif font-bold mb-3">
+          <h1 className="text-3xl font-bold mb-3">
             Build Your Identity Vault
           </h1>
           <p className="text-sage-700 mb-2 text-lg">
@@ -373,7 +373,7 @@ export default function OnboardingPage() {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-serif font-bold mb-2">
+          <h2 className="text-2xl font-bold mb-2">
             Vault Saved & Audited
           </h2>
           <p className="text-sage-600">
