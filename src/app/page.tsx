@@ -28,7 +28,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="pt-32 pb-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-serif font-bold leading-tight mb-6 text-black">
+          <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6 text-black">
             Move Beyond Social Silence.{" "}
             <span className="text-[#C4A882]">Architect Your Authority.</span>
           </h1>
@@ -49,7 +49,7 @@ export default function LandingPage() {
       {/* The Engine */}
       <section className="py-20 px-6 border-t border-sage-200">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-serif font-bold text-center mb-16 text-black">
+          <h2 className="text-3xl font-bold text-center mb-16 text-black">
             The Steel Loop
           </h2>
           <div className="grid md:grid-cols-4 gap-6">
@@ -92,7 +92,7 @@ export default function LandingPage() {
       {/* Philosophy */}
       <section className="py-20 px-6 border-t border-sage-200">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl font-serif font-bold mb-6 text-black">
+          <h2 className="text-3xl font-bold mb-6 text-black">
             The Thinking First Approach
           </h2>
           <p className="text-sage-700 leading-relaxed">
