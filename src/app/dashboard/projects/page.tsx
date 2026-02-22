@@ -33,6 +33,8 @@ export default function ProjectsPage() {
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
   const [browsing, setBrowsing] = useState(false);
   const [selectingSaving, setSelectingSaving] = useState(false);
+  const [browseError, setBrowseError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function syncFolders() {
     setSyncing(true);
@@ -93,30 +95,48 @@ export default function ProjectsPage() {
   async function handleBrowseFolder(projectId: string) {
     setBrowsingProjectId(projectId);
     setBrowsing(true);
+    setBrowseError(null);
     setCloudFiles([]);
     setSelectedFileIds(new Set());
 
-    const res = await fetch(`/api/projects/${projectId}/browse-folder`);
-    if (res.ok) {
-      const data = await res.json();
-      setCloudFiles(data.files);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/browse-folder`);
+      if (res.ok) {
+        const data = await res.json();
+        setCloudFiles(data.files);
+      } else {
+        const data = await res.json().catch(() => ({ error: "Failed to browse folder" }));
+        setBrowseError(data.error || "Could not load files from cloud drive.");
+      }
+    } catch {
+      setBrowseError("Could not reach the server. Check your connection.");
     }
     setBrowsing(false);
   }
 
   async function handleSelectFiles(projectId: string) {
     setSelectingSaving(true);
-    const filesToSelect = cloudFiles.filter((f) => selectedFileIds.has(f.id));
-    await fetch(`/api/projects/${projectId}/select-files`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ files: filesToSelect }),
-    });
-    setBrowsingProjectId(null);
-    setCloudFiles([]);
-    setSelectedFileIds(new Set());
+    setActionError(null);
+    try {
+      const filesToSelect = cloudFiles.filter((f) => selectedFileIds.has(f.id));
+      const res = await fetch(`/api/projects/${projectId}/select-files`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: filesToSelect }),
+      });
+      if (res.ok) {
+        setBrowsingProjectId(null);
+        setCloudFiles([]);
+        setSelectedFileIds(new Set());
+        await syncFolders();
+      } else {
+        const data = await res.json().catch(() => ({ error: "Failed to save files" }));
+        setActionError(data.error || "Could not save selected files.");
+      }
+    } catch {
+      setActionError("Could not reach the server. Check your connection.");
+    }
     setSelectingSaving(false);
-    await syncFolders();
   }
 
   function toggleFile(fileId: string) {
@@ -185,12 +205,12 @@ export default function ProjectsPage() {
         </button>
       </div>
 
-      {syncError && (
+      {(syncError || actionError) && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
           <div className="flex items-center justify-between">
-            <p className="text-red-600 text-sm">{syncError}</p>
+            <p className="text-red-600 text-sm">{syncError || actionError}</p>
             <button
-              onClick={() => setSyncError(null)}
+              onClick={() => { setSyncError(null); setActionError(null); }}
               className="text-xs text-sage-500 hover:text-sage-700 ml-4"
             >
               Dismiss
@@ -232,7 +252,7 @@ export default function ProjectsPage() {
                     disabled={creatingId !== null}
                     className="px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                   >
-                    {creatingId === folder.id ? "Creating..." : "Add Project"}
+                    {creatingId === folder.id ? "Linking..." : "Link Project"}
                   </button>
                 )}
               </div>
@@ -251,15 +271,24 @@ export default function ProjectsPage() {
                     </button>
                     <button
                       onClick={async () => {
-                        await fetch(`/api/projects/${folder.projectId}/ingest`, {
-                          method: "POST",
-                        });
-                        await syncFolders();
+                        setActionError(null);
+                        try {
+                          const res = await fetch(`/api/projects/${folder.projectId}/ingest`, {
+                            method: "POST",
+                          });
+                          if (!res.ok) {
+                            const data = await res.json().catch(() => ({ error: "Ingest failed" }));
+                            setActionError(data.error || "Scout failed. Try again.");
+                          }
+                          await syncFolders();
+                        } catch {
+                          setActionError("Could not reach the server.");
+                        }
                       }}
-                      disabled={folder.fileCount === 0}
+                      disabled={folder.projectStatus === "processing"}
                       className="px-3 py-1.5 bg-sage-100 hover:bg-sage-200 text-sage-700 rounded-lg text-sm transition-colors disabled:opacity-30"
                     >
-                      Run Scout
+                      {folder.projectStatus === "processing" ? "Scouting..." : "Run Scout"}
                     </button>
                   </div>
                 </div>
@@ -270,6 +299,16 @@ export default function ProjectsPage() {
                 <div className="mt-4 p-4 bg-sage-50 rounded-lg">
                   {browsing ? (
                     <p className="text-sm text-sage-600">Loading files...</p>
+                  ) : browseError ? (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-red-600 text-sm">{browseError}</p>
+                      <button
+                        onClick={() => { setBrowsingProjectId(null); setBrowseError(null); }}
+                        className="text-xs text-sage-500 hover:text-sage-700 mt-2"
+                      >
+                        Close
+                      </button>
+                    </div>
                   ) : cloudFiles.length === 0 ? (
                     <p className="text-sm text-sage-600">
                       No files found in this folder.

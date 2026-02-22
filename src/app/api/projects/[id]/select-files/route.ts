@@ -43,37 +43,42 @@ export async function POST(
     );
   }
 
-  const created = [];
+  try {
+    const created = [];
 
-  for (const file of files) {
-    const fileType = MIME_TO_FILE_TYPE[file.mimeType];
-    if (!fileType) continue;
+    for (const file of files) {
+      const fileType = MIME_TO_FILE_TYPE[file.mimeType];
+      if (!fileType) continue;
 
-    const record = await db.projectFile.upsert({
-      where: {
-        projectId_cloudFileId_cloudProvider: {
+      const record = await db.projectFile.upsert({
+        where: {
+          projectId_cloudFileId_cloudProvider: {
+            projectId: project.id,
+            cloudFileId: file.id,
+            cloudProvider: project.sourceFolderProvider,
+          },
+        },
+        create: {
           projectId: project.id,
+          fileName: file.name,
+          fileType: fileType as "pdf" | "docx" | "pptx" | "txt" | "image",
+          mimeType: file.mimeType,
           cloudFileId: file.id,
           cloudProvider: project.sourceFolderProvider,
+          fileSizeBytes: file.size || 0,
         },
-      },
-      create: {
-        projectId: project.id,
-        fileName: file.name,
-        fileType: fileType as "pdf" | "docx" | "pptx" | "txt" | "image",
-        mimeType: file.mimeType,
-        cloudFileId: file.id,
-        cloudProvider: project.sourceFolderProvider,
-        fileSizeBytes: file.size || 0,
-      },
-      update: {
-        fileName: file.name,
-        fileSizeBytes: file.size || 0,
-      },
-    });
+        update: {
+          fileName: file.name,
+          fileSizeBytes: file.size || 0,
+        },
+      });
 
-    created.push(record);
+      created.push(record);
+    }
+
+    return NextResponse.json(created, { status: 201 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Failed to save files";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
-
-  return NextResponse.json(created, { status: 201 });
 }

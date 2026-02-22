@@ -142,6 +142,50 @@ export async function listFolders(
     }));
 }
 
+/**
+ * Recursively list all files in a folder and its subfolders.
+ */
+export async function listFolderFilesRecursive(
+  accessToken: string,
+  folderId: string,
+  maxDepth: number = 3
+): Promise<OneDriveFile[]> {
+  const allFiles: OneDriveFile[] = [];
+
+  async function recurse(currentFolderId: string, depth: number) {
+    if (depth > maxDepth) return;
+
+    const response = await fetch(
+      `${GRAPH_API_BASE}/me/drive/items/${currentFolderId}/children?$select=id,name,file,folder,size,lastModifiedDateTime&$top=100`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (!response.ok) {
+      throw new Error(`OneDrive list failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const items = data.value || [];
+
+    for (const item of items) {
+      if (item.file) {
+        allFiles.push({
+          id: item.id,
+          name: item.name,
+          mimeType: item.file?.mimeType || "application/octet-stream",
+          size: item.size || 0,
+          modifiedTime: item.lastModifiedDateTime,
+        });
+      } else if (item.folder) {
+        await recurse(item.id, depth + 1);
+      }
+    }
+  }
+
+  await recurse(folderId, 0);
+  return allFiles;
+}
+
 export async function downloadFile(
   accessToken: string,
   fileId: string
