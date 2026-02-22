@@ -134,6 +134,34 @@ export async function listFolders(
   }));
 }
 
+/**
+ * Recursively list all files in a folder and its subfolders.
+ */
+export async function listFolderFilesRecursive(
+  accessToken: string,
+  folderId: string,
+  maxDepth: number = 3
+): Promise<DriveFile[]> {
+  const allFiles: DriveFile[] = [];
+
+  async function recurse(currentFolderId: string, depth: number) {
+    if (depth > maxDepth) return;
+
+    const files = await listFolderFiles(accessToken, currentFolderId);
+    allFiles.push(
+      ...files.filter((f) => f.mimeType !== "application/vnd.google-apps.folder")
+    );
+
+    const folders = await listFolders(accessToken, currentFolderId);
+    for (const folder of folders) {
+      await recurse(folder.id, depth + 1);
+    }
+  }
+
+  await recurse(folderId, 0);
+  return allFiles;
+}
+
 export async function downloadFile(
   accessToken: string,
   fileId: string

@@ -3,16 +3,79 @@ import { db } from "@/lib/db";
 import { callClaude } from "@/lib/ai/client";
 import { buildScoutPrompt, SCOUT_SYSTEM_PROMPT } from "@/lib/ai/prompts/scout";
 import { getValidAccessToken } from "@/lib/cloud-auth";
-import { downloadFile as downloadGoogleFile } from "@/lib/google-drive";
-import { downloadFile as downloadOneDriveFile } from "@/lib/onedrive";
+import {
+  downloadFile as downloadGoogleFile,
+  listFolderFilesRecursive as listGoogleFilesRecursive,
+} from "@/lib/google-drive";
+import {
+  downloadFile as downloadOneDriveFile,
+  listFolderFilesRecursive as listOneDriveFilesRecursive,
+} from "@/lib/onedrive";
 import { extractText } from "@/lib/ingestion/pipeline";
 import type { FileType } from "@/lib/ingestion/pipeline";
+
+const MIME_TO_FILE_TYPE: Record<string, string> = {
+  "application/pdf": "pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "text/plain": "txt",
+  "image/png": "image",
+  "image/jpeg": "image",
+  "image/webp": "image",
+};
 
 export const ingestFiles = inngest.createFunction(
   { id: "ingest-files", name: "Ingest Project Files" },
   { event: "glueos/ingest-files" },
   async ({ event, step }) => {
     const { projectId, pipelineItemId, userId } = event.data;
+
+    // Step 0: Auto-discover files from cloud folder (if linked)
+    await step.run("discover-files", async () => {
+      const project = await db.project.findUniqueOrThrow({
+        where: { id: projectId },
+      });
+
+      if (!project.sourceFolderId || !project.sourceFolderProvider) return;
+
+      const accessToken = await getValidAccessToken(
+        userId,
+        project.sourceFolderProvider
+      );
+
+      const cloudFiles =
+        project.sourceFolderProvider === "google_drive"
+          ? await listGoogleFilesRecursive(accessToken, project.sourceFolderId)
+          : await listOneDriveFilesRecursive(accessToken, project.sourceFolderId);
+
+      for (const file of cloudFiles) {
+        const fileType = MIME_TO_FILE_TYPE[file.mimeType];
+        if (!fileType) continue;
+
+        await db.projectFile.upsert({
+          where: {
+            projectId_cloudFileId_cloudProvider: {
+              projectId,
+              cloudFileId: file.id,
+              cloudProvider: project.sourceFolderProvider,
+            },
+          },
+          create: {
+            projectId,
+            fileName: file.name,
+            fileType: fileType as "pdf" | "docx" | "pptx" | "txt" | "image",
+            mimeType: file.mimeType,
+            cloudFileId: file.id,
+            cloudProvider: project.sourceFolderProvider,
+            fileSizeBytes: file.size || 0,
+          },
+          update: {
+            fileName: file.name,
+            fileSizeBytes: file.size || 0,
+          },
+        });
+      }
+    });
 
     // Step 1: Download files from cloud drive and extract text
     await step.run("extract-text", async () => {

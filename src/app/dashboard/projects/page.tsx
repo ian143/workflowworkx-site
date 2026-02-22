@@ -252,7 +252,7 @@ export default function ProjectsPage() {
                     disabled={creatingId !== null}
                     className="px-4 py-2 bg-sage-600 hover:bg-sage-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                   >
-                    {creatingId === folder.id ? "Creating..." : "Add Project"}
+                    {creatingId === folder.id ? "Linking..." : "Link Project"}
                   </button>
                 )}
               </div>
@@ -285,10 +285,10 @@ export default function ProjectsPage() {
                           setActionError("Could not reach the server.");
                         }
                       }}
-                      disabled={folder.fileCount === 0}
+                      disabled={folder.projectStatus === "processing"}
                       className="px-3 py-1.5 bg-sage-100 hover:bg-sage-200 text-sage-700 rounded-lg text-sm transition-colors disabled:opacity-30"
                     >
-                      Run Scout
+                      {folder.projectStatus === "processing" ? "Scouting..." : "Run Scout"}
                     </button>
                   </div>
                 </div>

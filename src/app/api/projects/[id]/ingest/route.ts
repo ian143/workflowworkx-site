@@ -23,9 +23,11 @@ export async function POST(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  if (project.files.length === 0) {
+  // Allow ingest even with 0 files if a cloud folder is linked
+  // (the ingest job will auto-discover files from the folder)
+  if (project.files.length === 0 && !project.sourceFolderId) {
     return NextResponse.json(
-      { error: "No files to ingest" },
+      { error: "No files to ingest and no cloud folder linked" },
       { status: 400 }
     );
   }
